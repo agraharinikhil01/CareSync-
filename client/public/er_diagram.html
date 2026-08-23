@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hospital Management System - ER Diagram & Database Design</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; }
+    body { background: #f8fafc; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 40px 20px; color: #1e293b; }
+    .card { background: #ffffff; padding: 35px; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08); max-width: 950px; width: 100%; }
+    .header { margin-bottom: 25px; text-align: center; }
+    .header h1 { font-size: 24px; color: #0f172a; margin-bottom: 6px; }
+    .header p { font-size: 14px; color: #64748b; }
+    .diagram-container { width: 100%; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; background: #ffffff; text-align: center; }
+    svg { width: 100%; height: auto; max-height: 750px; }
+    .section-title { font-size: 20px; font-weight: bold; color: #0f172a; margin: 35px 0 15px 0; }
+    .table-wrapper { margin-bottom: 25px; }
+    .table-title { font-size: 15px; font-weight: 700; color: #1b365d; margin-bottom: 8px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 13.5px; }
+    th { background: #1b365d; color: #ffffff; text-align: left; padding: 10px 14px; font-weight: 600; }
+    td { padding: 9px 14px; border-bottom: 1px solid #e2e8f0; }
+    tr:nth-child(even) { background: #f8fafc; }
+    .actions { margin-top: 30px; display: flex; justify-content: center; gap: 15px; }
+    .btn { padding: 10px 22px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s ease; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
+    .btn-primary { background: #0284c7; color: #ffffff; }
+    .btn-primary:hover { background: #0369a1; }
+    .btn-secondary { background: #e2e8f0; color: #334155; }
+    .btn-secondary:hover { background: #cbd5e1; }
+    @media print { body { background: #ffffff; padding: 0; } .card { box-shadow: none; padding: 0; max-width: 100%; } .actions, .header p { display: none; } .diagram-container { border: none; padding: 0; } }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <h1>Chapter 4: System Design</h1>
+      <p>Figure 4.4: Entity-Relationship Diagram & Database Design</p>
+    </div>
+
+    <div class="diagram-container">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 760" width="100%" height="100%">
+        <defs>
+          <filter id="box-shadow" x="-5%" y="-5%" width="110%" height="115%" filterUnits="userSpaceOnUse">
+            <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity="0.08"/>
+          </filter>
+        </defs>
+
+        <!-- DEPARTMENT -->
+        <g id="table-department" filter="url(#box-shadow)">
+          <rect x="350" y="40" width="160" height="28" fill="#1b365d" rx="2" ry="2" />
+          <text x="430" y="59" text-anchor="middle" font-size="12" font-weight="bold" fill="#ffffff" letter-spacing="0.5">DEPARTMENT</text>
+          <rect x="350" y="68" width="160" height="66" fill="#ffffff" stroke="#1b365d" stroke-width="1.5" />
+          <text x="360" y="86" font-size="11" fill="#1b365d"><tspan font-weight="bold">PK </tspan>department_id</text>
+          <text x="360" y="104" font-size="11" fill="#333333">dept_name</text>
+          <text x="360" y="122" font-size="11" fill="#333333">head_doctor_id</text>
+        </g>
+
+        <!-- DOCTOR -->
+        <g id="table-doctor" filter="url(#box-shadow)">
+          <rect x="180" y="190" width="155" height="28" fill="#1b365d" rx="2" ry="2" />
+          <text x="257" y="209" text-anchor="middle" font-size="12" font-weight="bold" fill="#ffffff" letter-spacing="0.5">DOCTOR</text>
+          <rect x="180" y="218" width="155" height="102" fill="#ffffff" stroke="#1b365d" stroke-width="1.5" />
+          <text x="190" y="236" font-size="11" fill="#1b365d"><tspan font-weight="bold">PK </tspan>doctor_id</text>
+          <text x="190" y="254" font-size="11" fill="#333333">name</text>
+          <text x="190" y="272" font-size="11" fill="#333333">specialization</text>
+          <text x="190" y="290" font-size="11" fill="#333333">contact_no</text>
+          <text x="190" y="308" font-size="11" fill="#1b365d"><tspan font-weight="bold">FK </tspan>department_id</text>
+        </g>
+
+        <!-- PATIENT -->
+        <g id="table-patient" filter="url(#box-shadow)">
+          <rect x="380" y="180" width="140" height="28" fill="#1b365d" rx="2" ry="2" />
+          <text x="450" y="199" text-anchor="middle" font-size="12" font-weight="bold" fill="#ffffff" letter-spacing="0.5">PATIENT</text>
+          <rect x="380" y="208" width="140" height="118" fill="#ffffff" stroke="#1b365d" stroke-width="1.5" />
+          <text x="390" y="226" font-size="11" fill="#1b365d"><tspan font-weight="bold">PK </tspan>patient_id</text>
+          <text x="390" y="244" font-size="11" fill="#333333">name</text>
+          <text x="390" y="262" font-size="11" fill="#333333">dob</text>
+          <text x="390" y="280" font-size="11" fill="#333333">gender</text>
+          <text x="390" y="298" font-size="11" fill="#333333">contact_no</text>
+          <text x="390" y="316" font-size="11" fill="#333333">blood_group</text>
+        </g>
+
+        <!-- STAFF -->
+        <g id="table-staff" filter="url(#box-shadow)">
+          <rect x="560" y="200" width="145" height="28" fill="#1b365d" rx="2" ry="2" />
+          <text x="632" y="219" text-anchor="middle" font-size="12" font-weight="bold" fill="#ffffff" letter-spacing="0.5">STAFF</text>
+          <rect x="560" y="228" width="145" height="85" fill="#ffffff" stroke="#1b365d" stroke-width="1.5" />
+          <text x="570" y="246" font-size="11" fill="#1b365d"><tspan font-weight="bold">PK </tspan>staff_id</text>
+          <text x="570" y="264" font-size="11" fill="#333333">name</text>
+          <text x="570" y="282" font-size="11" fill="#333333">role</text>
+          <text x="570" y="300" font-size="11" fill="#1b365d"><tspan font-weight="bold">FK </tspan>department_id</text>
+        </g>
+
+        <!-- WARD -->
+        <g id="table-ward" filter="url(#box-shadow)">
+          <rect x="740" y="210" width="115" height="28" fill="#1b365d" rx="2" ry="2" />
+          <text x="797" y="229" text-anchor="middle" font-size="12" font-weight="bold" fill="#ffffff" letter-spacing="0.5">WARD</text>
+          <rect x="740" y="238" width="115" height="68" fill="#ffffff" stroke="#1b365d" stroke-width="1.5" />
+          <text x="748" y="256" font-size="11" fill="#1b365d"><tspan font-weight="bold">PK </tspan>ward_id</text>
+          <text x="748" y="274" font-size="11" fill="#333333">ward_type</text>
+          <text x="748" y="292" font-size="11" fill="#333333">capacity</text>
+        </g>
+
+        <!-- APPOINTMENT -->
+        <g id="table-appointment" filter="url(#box-shadow)">
+          <rect x="175" y="370" width="165" height="28" fill="#1b365d" rx="2" ry="2" />
+          <text x="257" y="389" text-anchor="middle" font-size="12" font-weight="bold" fill="#ffffff" letter-spacing="0.5">APPOINTMENT</text>
+          <rect x="175" y="398" width="165" height="120" fill="#ffffff" stroke="#1b365d" stroke-width="1.5" />
+          <text x="185" y="416" font-size="11" fill="#1b365d"><tspan font-weight="bold">PK </tspan>appointment_id</text>
+          <text x="185" y="434" font-size="11" fill="#1b365d"><tspan font-weight="bold">FK </tspan>patient_id</text>
+          <text x="185" y="452" font-size="11" fill="#1b365d"><tspan font-weight="bold">FK </tspan>doctor_id</text>
+          <text x="185" y="470" font-size="11" fill="#333333">date</text>
+          <text x="185" y="488" font-size="11" fill="#333333">time_slot</text>
+          <text x="185" y="506" font-size="11" fill="#333333">status</text>
+        </g>
+
+        <!-- ADMISSION -->
+        <g id="table-admission" filter="url(#box-shadow)">
+          <rect x="645" y="380" width="140" height="28" fill="#1b365d" rx="2" ry="2" />
+          <text x="715" y="399" text-anchor="middle" font-size="12" font-weight="bold" fill="#ffffff" letter-spacing="0.5">ADMISSION</text>
+          <rect x="645" y="408" width="140" height="102" fill="#ffffff" stroke="#1b365d" stroke-width="1.5" />
+          <text x="655" y="426" font-size="11" fill="#1b365d"><tspan font-weight="bold">PK </tspan>admission_id</text>
+          <text x="655" y="444" font-size="11" fill="#1b365d"><tspan font-weight="bold">FK </tspan>patient_id</text>
+          <text x="655" y="462" font-size="11" fill="#1b365d"><tspan font-weight="bold">FK </tspan>ward_id</text>
+          <text x="655" y="480" font-size="11" fill="#333333">admit_date</text>
+          <text x="655" y="498" font-size="11" fill="#333333">discharge_date</text>
+        </g>
+
+        <!-- PRESCRIPTION -->
+        <g id="table-prescription" filter="url(#box-shadow)">
+          <rect x="165" y="550" width="155" height="28" fill="#1b365d" rx="2" ry="2" />
+          <text x="242" y="569" text-anchor="middle" font-size="12" font-weight="bold" fill="#ffffff" letter-spacing="0.5">PRESCRIPTION</text>
+          <rect x="165" y="578" width="155" height="85" fill="#ffffff" stroke="#1b365d" stroke-width="1.5" />
+          <text x="175" y="596" font-size="11" fill="#1b365d"><tspan font-weight="bold">PK </tspan>prescription_id</text>
+          <text x="175" y="614" font-size="11" fill="#1b365d"><tspan font-weight="bold">FK </tspan>appointment_id</text>
+          <text x="175" y="632" font-size="11" fill="#333333">medicines</text>
+          <text x="175" y="650" font-size="11" fill="#333333">dosage_notes</text>
+        </g>
+
+        <!-- BILL -->
+        <g id="table-bill" filter="url(#box-shadow)">
+          <rect x="365" y="540" width="155" height="28" fill="#1b365d" rx="2" ry="2" />
+          <text x="442" y="559" text-anchor="middle" font-size="12" font-weight="bold" fill="#ffffff" letter-spacing="0.5">BILL</text>
+          <rect x="365" y="568" width="155" height="102" fill="#ffffff" stroke="#1b365d" stroke-width="1.5" />
+          <text x="375" y="586" font-size="11" fill="#1b365d"><tspan font-weight="bold">PK </tspan>bill_id</text>
+          <text x="375" y="604" font-size="11" fill="#1b365d"><tspan font-weight="bold">FK </tspan>patient_id</text>
+          <text x="375" y="622" font-size="11" fill="#1b365d"><tspan font-weight="bold">FK </tspan>appointment_id</text>
+          <text x="375" y="640" font-size="11" fill="#333333">amount</text>
+          <text x="375" y="658" font-size="11" fill="#333333">payment_status</text>
+        </g>
+
+        <!-- RELATIONSHIP LINES -->
+        <line x1="380" y1="134" x2="280" y2="190" stroke="#1b365d" stroke-width="1.5" />
+        <text x="385" y="152" font-size="11" font-weight="bold" fill="#1b365d">1</text>
+        <text x="290" y="180" font-size="11" font-weight="bold" fill="#1b365d">M</text>
+
+        <line x1="475" y1="134" x2="600" y2="200" stroke="#1b365d" stroke-width="1.5" />
+        <text x="470" y="152" font-size="11" font-weight="bold" fill="#1b365d">1</text>
+        <text x="590" y="185" font-size="11" font-weight="bold" fill="#1b365d">M</text>
+
+        <line x1="257" y1="320" x2="257" y2="370" stroke="#1b365d" stroke-width="1.5" />
+        <text x="245" y="340" font-size="11" font-weight="bold" fill="#1b365d">1</text>
+        <text x="245" y="360" font-size="11" font-weight="bold" fill="#1b365d">M</text>
+
+        <line x1="400" y1="326" x2="310" y2="370" stroke="#1b365d" stroke-width="1.5" />
+        <text x="385" y="345" font-size="11" font-weight="bold" fill="#1b365d">1</text>
+        <text x="320" y="360" font-size="11" font-weight="bold" fill="#1b365d">M</text>
+
+        <line x1="510" y1="326" x2="655" y2="380" stroke="#1b365d" stroke-width="1.5" />
+        <text x="535" y="345" font-size="11" font-weight="bold" fill="#1b365d">1</text>
+        <text x="635" y="370" font-size="11" font-weight="bold" fill="#1b365d">M</text>
+
+        <line x1="770" y1="306" x2="730" y2="380" stroke="#1b365d" stroke-width="1.5" />
+        <text x="765" y="330" font-size="11" font-weight="bold" fill="#1b365d">1</text>
+        <text x="738" y="365" font-size="11" font-weight="bold" fill="#1b365d">M</text>
+
+        <line x1="440" y1="326" x2="440" y2="540" stroke="#1b365d" stroke-width="1.5" />
+        <text x="448" y="350" font-size="11" font-weight="bold" fill="#1b365d">1</text>
+        <text x="448" y="525" font-size="11" font-weight="bold" fill="#1b365d">M</text>
+
+        <line x1="245" y1="518" x2="245" y2="550" stroke="#1b365d" stroke-width="1.5" />
+        <text x="235" y="533" font-size="11" font-weight="bold" fill="#1b365d">1</text>
+        <text x="252" y="533" font-size="11" font-weight="bold" fill="#1b365d">1</text>
+
+        <line x1="330" y1="518" x2="380" y2="540" stroke="#1b365d" stroke-width="1.5" />
+        <text x="338" y="535" font-size="11" font-weight="bold" fill="#1b365d">1</text>
+        <text x="375" y="533" font-size="11" font-weight="bold" fill="#1b365d">1</text>
+
+        <!-- CAPTION -->
+        <text x="450" y="725" text-anchor="middle" font-size="15" font-style="italic" font-weight="bold" fill="#2d3748">
+          Figure 4.4: Entity-Relationship Diagram
+        </text>
+      </svg>
+    </div>
+
+    <!-- 4.5 DATABASE DESIGN DATA DICTIONARY TABLES -->
+    <h2 class="section-title">4.5 Database Design (Data Dictionary)</h2>
+    <p style="margin-bottom: 20px; font-size: 14px; color: #475569;">
+      The relational schema implied by the ER diagram is detailed below, table by table, with field names, data types, and descriptions.
+    </p>
+
+    <!-- 4.5.1 Patient -->
+    <div class="table-wrapper">
+      <div class="table-title">4.5.1 Patient</div>
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><b>patient_id</b></td><td>INT (PK, AUTO_INCREMENT)</td><td>Unique patient identifier</td></tr>
+          <tr><td>name</td><td>VARCHAR(100)</td><td>Patient's full name</td></tr>
+          <tr><td>dob</td><td>DATE</td><td>Date of birth</td></tr>
+          <tr><td>gender</td><td>VARCHAR(10)</td><td>Male / Female / Other</td></tr>
+          <tr><td>contact_no</td><td>VARCHAR(20)</td><td>Primary contact phone number</td></tr>
+          <tr><td>blood_group</td><td>VARCHAR(5)</td><td>Blood type (e.g., A+, B+, O-)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 4.5.2 Doctor -->
+    <div class="table-wrapper">
+      <div class="table-title">4.5.2 Doctor</div>
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><b>doctor_id</b></td><td>INT (PK, AUTO_INCREMENT)</td><td>Unique doctor identifier</td></tr>
+          <tr><td>name</td><td>VARCHAR(100)</td><td>Doctor's full name</td></tr>
+          <tr><td>specialization</td><td>VARCHAR(100)</td><td>Medical specialty (e.g. Cardiology)</td></tr>
+          <tr><td>contact_no</td><td>VARCHAR(20)</td><td>Contact phone number</td></tr>
+          <tr><td><b>department_id</b></td><td>INT (FK)</td><td>References Department(department_id)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 4.5.3 Department -->
+    <div class="table-wrapper">
+      <div class="table-title">4.5.3 Department</div>
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><b>department_id</b></td><td>INT (PK, AUTO_INCREMENT)</td><td>Unique department identifier</td></tr>
+          <tr><td>dept_name</td><td>VARCHAR(100)</td><td>Department name</td></tr>
+          <tr><td>head_doctor_id</td><td>INT (FK)</td><td>References Doctor(doctor_id)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 4.5.4 Appointment -->
+    <div class="table-wrapper">
+      <div class="table-title">4.5.4 Appointment</div>
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><b>appointment_id</b></td><td>INT (PK, AUTO_INCREMENT)</td><td>Unique appointment identifier</td></tr>
+          <tr><td><b>patient_id</b></td><td>INT (FK)</td><td>References Patient(patient_id)</td></tr>
+          <tr><td><b>doctor_id</b></td><td>INT (FK)</td><td>References Doctor(doctor_id)</td></tr>
+          <tr><td>date</td><td>DATE</td><td>Scheduled consultation date</td></tr>
+          <tr><td>time_slot</td><td>VARCHAR(20)</td><td>Assigned time slot</td></tr>
+          <tr><td>status</td><td>VARCHAR(20)</td><td>Scheduled / Completed / Cancelled</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 4.5.5 Admission & Ward -->
+    <div class="table-wrapper">
+      <div class="table-title">4.5.5 Ward & Admission</div>
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><b>admission_id</b></td><td>INT (PK, AUTO_INCREMENT)</td><td>Unique admission record ID</td></tr>
+          <tr><td><b>patient_id</b></td><td>INT (FK)</td><td>References Patient(patient_id)</td></tr>
+          <tr><td><b>ward_id</b></td><td>INT (FK)</td><td>References Ward(ward_id)</td></tr>
+          <tr><td>admit_date</td><td>DATETIME</td><td>Patient admission timestamp</td></tr>
+          <tr><td>discharge_date</td><td>DATETIME</td><td>Patient discharge timestamp</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 4.5.6 Prescription & Bill -->
+    <div class="table-wrapper">
+      <div class="table-title">4.5.6 Prescription & Bill</div>
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><b>prescription_id</b></td><td>INT (PK, AUTO_INCREMENT)</td><td>Unique prescription ID</td></tr>
+          <tr><td><b>bill_id</b></td><td>INT (PK, AUTO_INCREMENT)</td><td>Unique bill / invoice ID</td></tr>
+          <tr><td><b>appointment_id</b></td><td>INT (FK)</td><td>References Appointment(appointment_id)</td></tr>
+          <tr><td>amount</td><td>DECIMAL(10,2)</td><td>Total itemized billed amount</td></tr>
+          <tr><td>payment_status</td><td>VARCHAR(20)</td><td>Paid / Pending / Refunded</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" onclick="window.print()">🖨️ Print / Save as PDF</button>
+      <a class="btn btn-secondary" href="er_diagram.svg" download="Figure_4.4_ER_Diagram.svg">📥 Download SVG File</a>
+    </div>
+  </div>
+</body>
+</html>

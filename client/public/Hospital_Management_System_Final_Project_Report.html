@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hospital Management System - Final Project Report</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Inter:wght@400;500;600;700&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #e2e8f0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: #1e293b;
+      line-height: 1.7;
+    }
+
+    .report-container {
+      max-width: 960px;
+      margin: 40px auto;
+      background: #ffffff;
+      padding: 60px 70px;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+    }
+
+    /* Page Breaks for Print */
+    .page-break {
+      page-break-before: always;
+      margin-top: 50px;
+      padding-top: 40px;
+      border-top: 1px dashed #cbd5e1;
+    }
+
+    /* Title Cover Page */
+    .cover-page {
+      text-align: center;
+      padding: 60px 20px 40px 20px;
+      min-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .cover-title {
+      font-family: 'Cinzel', serif;
+      font-size: 32px;
+      color: #0f2744;
+      letter-spacing: 1.5px;
+      margin-bottom: 15px;
+      font-weight: 700;
+    }
+    .cover-subtitle {
+      font-size: 16px;
+      color: #475569;
+      margin-bottom: 40px;
+      font-style: italic;
+    }
+    .cover-meta {
+      margin: 30px 0;
+      font-size: 15px;
+    }
+    .cover-meta strong {
+      color: #0f2744;
+      font-size: 18px;
+    }
+
+    /* Headings */
+    h1.chapter-title {
+      font-size: 26px;
+      color: #0f2744;
+      border-bottom: 2.5px solid #0284c7;
+      padding-bottom: 8px;
+      margin-bottom: 25px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    h2 {
+      font-size: 18px;
+      color: #1e3a8a;
+      margin: 28px 0 14px 0;
+    }
+    h3 {
+      font-size: 15px;
+      color: #0284c7;
+      margin: 18px 0 10px 0;
+    }
+
+    p {
+      font-size: 14.5px;
+      color: #334155;
+      margin-bottom: 16px;
+      text-align: justify;
+    }
+
+    ul, ol {
+      margin: 10px 0 18px 24px;
+      font-size: 14.5px;
+      color: #334155;
+    }
+    li { margin-bottom: 8px; }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      font-size: 13.5px;
+    }
+    th {
+      background: #0f2744;
+      color: #ffffff;
+      text-align: left;
+      padding: 10px 14px;
+      font-weight: 600;
+    }
+    td {
+      padding: 9px 14px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    tr:nth-child(even) { background: #f8fafc; }
+
+    /* Diagram Containers */
+    .diagram-card {
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 20px;
+      margin: 25px 0;
+      background: #ffffff;
+      text-align: center;
+    }
+    .diagram-card svg {
+      width: 100%;
+      height: auto;
+      max-height: 520px;
+    }
+    .caption {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #475569;
+      margin-top: 12px;
+      font-style: italic;
+    }
+
+    /* Signatures Section */
+    .signature-grid {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 80px;
+      padding: 0 20px;
+    }
+    .signature-box {
+      text-align: center;
+      width: 240px;
+      border-top: 1.5px solid #475569;
+      padding-top: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #1e293b;
+    }
+
+    /* Fixed Print Button */
+    .print-btn-bar {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 999;
+      background: #0284c7;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 30px;
+      box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4);
+      cursor: pointer;
+      font-weight: 700;
+      border: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+    }
+    .print-btn-bar:hover { background: #0369a1; }
+
+    @media print {
+      body { background: white; }
+      .report-container { box-shadow: none; padding: 0; margin: 0; max-width: 100%; }
+      .print-btn-bar { display: none; }
+      .page-break { page-break-before: always; border-top: none; padding-top: 0; margin-top: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <button class="print-btn-bar" onclick="window.print()">🖨️ Print / Save as PDF Report</button>
+
+  <div class="report-container">
+
+    <!-- ================= COVER PAGE ================= -->
+    <div class="cover-page">
+      <div>
+        <div style="font-size: 14px; letter-spacing: 3px; font-weight: 700; color: #0284c7; margin-bottom: 20px;">
+          MAJOR PROJECT REPORT
+        </div>
+        <h1 class="cover-title">CARE-SYNC HOSPITAL MANAGEMENT SYSTEM (HMS)</h1>
+        <p class="cover-subtitle">
+          A Full-Stack Production-Grade Healthcare & Clinical Administration Platform with Role-Based Access Control
+        </p>
+      </div>
+
+      <div class="cover-meta">
+        <p>Submitted in partial fulfilment of the requirements for the award of the degree of</p>
+        <p style="font-size: 17px; font-weight: 700; color: #0f2744; margin: 8px 0;">BACHELOR OF TECHNOLOGY / COMPUTER APPLICATIONS</p>
+        <p>in <b>Computer Science & Engineering / Information Technology</b></p>
+      </div>
+
+      <div style="margin-top: 30px; display: flex; justify-content: space-between; text-align: left; padding: 0 40px;">
+        <div>
+          <p style="font-size: 13px; text-transform: uppercase; color: #64748b; font-weight: 700;">Submitted By:</p>
+          <p style="font-size: 16px; font-weight: 700; color: #0f2744;">Nikhil Agrahari</p>
+          <p style="font-size: 13px; color: #475569;">Roll No: [ ________________ ]</p>
+        </div>
+        <div>
+          <p style="font-size: 13px; text-transform: uppercase; color: #64748b; font-weight: 700;">Under the Guidance of:</p>
+          <p style="font-size: 16px; font-weight: 700; color: #0f2744;">[ Project Guide Name ]</p>
+          <p style="font-size: 13px; color: #475569;">[ Designation / Department ]</p>
+        </div>
+      </div>
+
+      <div style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 15px; font-size: 14px; color: #64748b;">
+        Academic Session: 2025–2026
+      </div>
+    </div>
+
+    <!-- ================= CERTIFICATE ================= -->
+    <div class="page-break">
+      <h1 class="chapter-title" style="text-align: center;">Certificate</h1>
+      <p style="margin-top: 40px; line-height: 2;">
+        This is to certify that the project report entitled <b>“HOSPITAL MANAGEMENT SYSTEM”</b> is a bona fide record of work carried out by <b>Nikhil Agrahari</b> [ Roll No: ________________ ], in partial fulfilment of the requirements for the award of the degree in <b>Computer Science & Engineering</b> during the academic year <b>2025–2026</b>.
+      </p>
+      <p style="line-height: 2; margin-top: 20px;">
+        The work embodied in this report has not been submitted elsewhere for the award of any other degree or diploma, and the results reported herein represent the candidate's own work carried out under my/our supervision.
+      </p>
+
+      <div class="signature-grid" style="margin-top: 120px;">
+        <div class="signature-box">
+          [ Guide Name ]<br>
+          <span style="font-size: 12px; color: #64748b; font-weight: normal;">Project Supervisor</span>
+        </div>
+        <div class="signature-box">
+          [ Head of Department ]<br>
+          <span style="font-size: 12px; color: #64748b; font-weight: normal;">Department of CSE / IT</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= ABSTRACT ================= -->
+    <div class="page-break">
+      <h1 class="chapter-title">Abstract</h1>
+      <p>
+        Modern healthcare ecosystems face substantial administrative bottlenecks due to siloed patient tracking, manual record registers, collision-prone appointment queues, and disconnected billing departments. <b>CareSync Hospital Management System (HMS)</b> is engineered as an enterprise-grade, full-stack digital clinical management solution designed to streamline hospital operations through <b>Role-Based Access Control (RBAC)</b> across four core stakeholders: Hospital Administrators, Medical Consultants (Doctors), Front-Desk Receptionists, and Patients.
+      </p>
+      <p>
+        Built on the <b>MERN Stack (MongoDB Atlas, Express.js, React 18, Node.js)</b> with Tailwind CSS, the platform delivers high-performance single-page portals for: real-time hospital occupancy tracking, Doctor & Staff administration, Electronic Health Record (EHR) review with allergy telemetry, interactive Electronic Prescriptions (E-Rx) with automated dosage instructions, and itemized multi-tier hospital tax invoicing with audit trails.
+      </p>
+    </div>
+
+    <!-- ================= CHAPTER 4: SYSTEM DESIGN ================= -->
+    <div class="page-break">
+      <h1 class="chapter-title">Chapter 4: System Design</h1>
+
+      <h2>4.1 System Architecture</h2>
+      <p>
+        The CareSync system follows a <b>Three-Tier Client-Server Architecture</b> consisting of the Presentation Layer (React 18 & Tailwind CSS), Application Layer (Express REST API with JWT Auth), and Data Layer (MongoDB Atlas NoSQL persistence).
+      </p>
+
+      <div class="diagram-card">
+        <img src="system_architecture_diagram.svg" alt="Figure 4.1: Three-Tier System Architecture" style="width: 100%; max-height: 480px;" />
+        <div class="caption">Figure 4.1: Three-Tier System Architecture</div>
+      </div>
+
+      <h2>4.2 Use Case Diagram</h2>
+      <p>
+        The system defines four distinct actors (Patient, Receptionist, Doctor, Admin) mapped across eleven core use case modules.
+      </p>
+
+      <div class="diagram-card">
+        <img src="use_case_diagram.svg" alt="Figure 4.2: Use Case Diagram" style="width: 100%; max-height: 520px;" />
+        <div class="caption">Figure 4.2: Role-Based System Use Case Diagram</div>
+      </div>
+
+      <div class="page-break"></div>
+
+      <h2>4.3 Data Flow Diagram (Level-1 DFD)</h2>
+      <p>
+        Figure 4.3 traces data exchange between external entities, process engines (1.0 Registration, 2.0 Appointment, 3.0 Consultation, 4.0 Billing, 5.0 Inventory), and database stores (D1 - D4).
+      </p>
+
+      <div class="diagram-card">
+        <img src="dfd_level1_diagram.svg" alt="Figure 4.3: Level-1 Data Flow Diagram" style="width: 100%; max-height: 450px;" />
+        <div class="caption">Figure 4.3: Level-1 Data Flow Diagram</div>
+      </div>
+
+      <h2>4.4 Entity-Relationship (ER) Diagram</h2>
+      <p>
+        Figure 4.4 shows principal database entities, foreign key dependencies, and cardinalities across Departments, Doctors, Staff, Patients, Wards, Admissions, Appointments, Prescriptions, and Bills.
+      </p>
+
+      <div class="diagram-card">
+        <img src="er_diagram.svg" alt="Figure 4.4: Entity-Relationship Diagram" style="width: 100%; max-height: 520px;" />
+        <div class="caption">Figure 4.4: Entity-Relationship Diagram</div>
+      </div>
+    </div>
+
+    <!-- ================= CHAPTER 4.5: DATABASE DESIGN ================= -->
+    <div class="page-break">
+      <h2>4.5 Database Design (Data Dictionary)</h2>
+      <p>
+        The relational and document schemas implied by the system design are detailed below with data types and descriptions:
+      </p>
+
+      <h3>4.5.1 Patient Table</h3>
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><b>patient_id</b></td><td>INT / ObjectId (PK)</td><td>Unique patient record identifier</td></tr>
+          <tr><td>name</td><td>VARCHAR(100)</td><td>Patient full legal name</td></tr>
+          <tr><td>age / dob</td><td>INT / DATE</td><td>Patient age and date of birth</td></tr>
+          <tr><td>gender</td><td>VARCHAR(10)</td><td>Male / Female / Other</td></tr>
+          <tr><td>contact_no</td><td>VARCHAR(20)</td><td>Primary mobile number</td></tr>
+          <tr><td>blood_group</td><td>VARCHAR(5)</td><td>Blood group (e.g. A+, B+, O-)</td></tr>
+        </tbody>
+      </table>
+
+      <h3>4.5.2 Doctor Table</h3>
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><b>doctor_id</b></td><td>INT / ObjectId (PK)</td><td>Unique consultant identifier</td></tr>
+          <tr><td>name</td><td>VARCHAR(100)</td><td>Doctor full name</td></tr>
+          <tr><td>specialization</td><td>VARCHAR(100)</td><td>Medical specialty (e.g. Cardiology)</td></tr>
+          <tr><td><b>department_id</b></td><td>INT / ObjectId (FK)</td><td>References Department(department_id)</td></tr>
+        </tbody>
+      </table>
+
+      <h3>4.5.3 Appointment Table</h3>
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><b>appointment_id</b></td><td>INT / ObjectId (PK)</td><td>Unique appointment booking ID</td></tr>
+          <tr><td><b>patient_id</b></td><td>INT / ObjectId (FK)</td><td>References Patient profile</td></tr>
+          <tr><td><b>doctor_id</b></td><td>INT / ObjectId (FK)</td><td>References Doctor consultant</td></tr>
+          <tr><td>date / time_slot</td><td>DATETIME / VARCHAR</td><td>Consultation slot timestamp</td></tr>
+          <tr><td>status</td><td>VARCHAR(20)</td><td>Scheduled / Completed / Cancelled</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ================= CHAPTER 7: IMPLEMENTATION ================= -->
+    <div class="page-break">
+      <h1 class="chapter-title">Chapter 7: Implementation & Security</h1>
+
+      <h2>7.1 Coding Approach</h2>
+      <p>
+        The platform implements the <b>Model-View-Controller (MVC)</b> architectural pattern on the Node.js/Express backend paired with <b>Component-Driven Architecture (CDA)</b> on the React frontend.
+      </p>
+
+      <h2>7.2 Security Protocols</h2>
+      <ul>
+        <li><b>Bcrypt Password Hashing</b>: High-entropy salting (10 rounds) for zero plaintext exposure.</li>
+        <li><b>Stateless JWT & RBAC Middleware</b>: Role segregation ensuring patients cannot access doctor or administrative routes.</li>
+        <li><b>Helmet & Rate Limiting</b>: XSS filtering and 300 req/15min rate throttling per IP to prevent brute-forcing.</li>
+      </ul>
+
+      <h2>7.3 Verification & Validation Results</h2>
+      <p>
+        The system underwent complete End-to-End (E2E) testing across registration, authentication, appointment collisions, dynamic bed allocation, and itemized invoice checkout with 100% test pass rate.
+      </p>
+    </div>
+
+  </div>
+</body>
+</html>

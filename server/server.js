@@ -30,30 +30,32 @@ connectDB();
 const app = express();
 
 // Security Middlewares
-app.use(helmet());
-
-// CORS Configuration
-const allowedOrigins = [
-  process.env.CLIENT_URL || 'http://localhost:5173',
-  'http://localhost:3000',
-  'http://127.0.0.1:5173',
-  'https://localhost:5173',
-];
-
 app.use(
-  cors({
-    origin: function (origin, callback) {
-      if (!origin || allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
-        callback(null, true);
-      } else {
-        callback(new Error('Blocked by CORS policy'));
-      }
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+  helmet({
+    crossOriginResourcePolicy: false,
+    crossOriginEmbedderPolicy: false,
   })
 );
+
+// Universal CORS Configuration (Permits Vercel, Localhost, and Production Domains)
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  })
+);
+
+// Ensure DB is connected for serverless cloud environments (Vercel)
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
 
 // Rate Limiting (General API rate limiter)
 const limiter = rateLimit({
@@ -171,19 +173,21 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-const server = app.listen(PORT, () => {
-  console.log(`====================================================`);
-  console.log(`🚀 Hospital Management Server running on port: ${PORT}`);
-  console.log(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🩺 Health check at: http://localhost:${PORT}/api/health`);
-  console.log(`====================================================`);
-});
+if (!process.env.VERCEL) {
+  const server = app.listen(PORT, () => {
+    console.log(`====================================================`);
+    console.log(`🚀 Hospital Management Server running on port: ${PORT}`);
+    console.log(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🩺 Health check at: http://localhost:${PORT}/api/health`);
+    console.log(`====================================================`);
+  });
 
-// Handle unhandled promise rejections
-process.on('unhandledRejection', (err) => {
-  console.error(`Unhandled Rejection Error: ${err.message}`);
-  server.close(() => process.exit(1));
-});
+  // Handle unhandled promise rejections
+  process.on('unhandledRejection', (err) => {
+    console.error(`Unhandled Rejection Error: ${err.message}`);
+    server.close(() => process.exit(1));
+  });
+}
 
 module.exports = app;
 

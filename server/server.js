@@ -156,16 +156,33 @@ const apiStatusHandler = (req, res) => {
 app.get('/', apiStatusHandler);
 app.get('/api', apiStatusHandler);
 
-// API Routes Mounting
+// API Routes Mounting (Supports both /api/* and direct /* in serverless environments)
 app.use('/api/auth', authRoutes);
+app.use('/auth', authRoutes);
+
 app.use('/api/admin', adminRoutes);
+app.use('/admin', adminRoutes);
+
 app.use('/api/doctors', doctorRoutes);
+app.use('/doctors', doctorRoutes);
+
 app.use('/api/patients', patientRoutes);
+app.use('/patients', patientRoutes);
+
 app.use('/api/appointments', appointmentRoutes);
+app.use('/appointments', appointmentRoutes);
+
 app.use('/api/prescriptions', prescriptionRoutes);
+app.use('/prescriptions', prescriptionRoutes);
+
 app.use('/api/billing', billingRoutes);
+app.use('/billing', billingRoutes);
+
 app.use('/api/beds', bedRoutes);
+app.use('/beds', bedRoutes);
+
 app.use('/api/ai', aiRoutes);
+app.use('/ai', aiRoutes);
 
 // Error Handling Middlewares
 app.use(notFound);

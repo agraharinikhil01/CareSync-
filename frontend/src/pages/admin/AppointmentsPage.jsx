@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
 import DashboardLayout from '../../layouts/DashboardLayout';
-import { Calendar, Plus, Search, Filter, CheckCircle2, XCircle, Clock, Check, X, User, Stethoscope } from 'lucide-react';
+import { Calendar, Plus, Search, Filter, Clock, Check, X, Stethoscope, User, CalendarCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const STATUS_TABS = ['ALL', 'CONFIRMED', 'PENDING', 'COMPLETED', 'CANCELLED'];
@@ -109,41 +109,42 @@ const AppointmentsPage = () => {
   });
 
   return (
-    <DashboardLayout>
+    <DashboardLayout title="Appointments Schedule">
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#dcdcde] pb-4 bg-white p-6 rounded-md shadow-xs">
+        {/* Header Hero */}
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="p-2 bg-[#e6f4f8] text-[#006088] rounded-md">
-                <Calendar className="w-6 h-6" />
-              </span>
-              <h1 className="text-2xl font-semibold text-[#2c3338] tracking-tight">Appointments Ledger</h1>
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-indigo-50 border border-indigo-200/60 text-xs text-indigo-800 font-semibold mb-2">
+              <CalendarCheck className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Consultations Central Ledger</span>
             </div>
-            <p className="text-sm text-[#50575e] mt-1">
-              Centralized consultation schedule, status auditing, and conflict-checked booking registry.
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+              Appointments & OPD Schedule
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+              Hospital-wide consultation schedule, status auditing, and conflict-checked booking registry.
             </p>
           </div>
           <button
             onClick={() => setShowModal(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-[#0087be] hover:bg-[#006088] text-white text-sm font-medium rounded-sm shadow-xs transition-colors cursor-pointer"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold rounded-xl shadow-xs shadow-sky-600/20 transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            Book Consultation
+            <span>Book Consultation</span>
           </button>
         </div>
 
         {/* Status Filters & Search */}
-        <div className="bg-white p-4 rounded-md border border-[#dcdcde] shadow-xs flex flex-col md:flex-row gap-4 justify-between items-center">
-          <div className="flex items-center gap-1 border-b md:border-b-0 border-[#dcdcde] pb-2 md:pb-0 overflow-x-auto w-full md:w-auto">
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row gap-4 justify-between items-center">
+          <div className="flex items-center gap-1.5 border-b md:border-b-0 border-slate-100 pb-2 md:pb-0 overflow-x-auto w-full md:w-auto">
             {STATUS_TABS.map((tab) => (
               <button
                 key={tab}
                 onClick={() => setStatusFilter(tab)}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-sm transition-colors cursor-pointer whitespace-nowrap ${
+                className={`px-3.5 py-2 text-xs font-semibold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
                   statusFilter === tab
-                    ? 'bg-[#006088] text-white'
-                    : 'text-[#50575e] hover:bg-[#f6f7f7] hover:text-[#2c3338]'
+                    ? 'bg-sky-600 text-white shadow-xs shadow-sky-600/20'
+                    : 'text-slate-600 hover:bg-slate-100'
                 }`}
               >
                 {tab}
@@ -152,79 +153,79 @@ const AppointmentsPage = () => {
           </div>
 
           <div className="relative w-full md:w-80">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by patient, doctor or reason..."
-              className="w-full pl-9 pr-3 py-2 text-sm border border-[#dcdcde] rounded-sm focus:outline-hidden focus:border-[#0087be] focus:ring-1 focus:ring-[#0087be]"
+              className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:border-sky-500 focus:ring-3 focus:ring-sky-500/15 text-slate-900"
             />
           </div>
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-md border border-[#dcdcde] shadow-xs overflow-hidden">
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
           {loading ? (
-            <div className="p-12 text-center">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-[#0087be] border-t-transparent"></div>
-              <p className="mt-3 text-sm text-[#50575e]">Loading appointments...</p>
+            <div className="p-16 text-center">
+              <div className="w-8 h-8 border-3 border-sky-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+              <p className="text-xs text-slate-500">Loading appointments...</p>
             </div>
           ) : filteredAppointments.length === 0 ? (
-            <div className="p-12 text-center">
-              <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-base font-medium text-[#2c3338]">No appointments found</p>
-              <p className="text-sm text-[#50575e] mt-1">No bookings match the selected status filter.</p>
+            <div className="p-16 text-center">
+              <Calendar className="w-12 h-12 text-slate-300 mx-auto mb-2" />
+              <p className="text-sm font-semibold text-slate-700">No appointments found</p>
+              <p className="text-xs text-slate-400 mt-1">No bookings match the selected status filter.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-sm">
+              <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="bg-[#f6f7f7] text-[#50575e] font-semibold text-xs border-b border-[#dcdcde]">
-                    <th className="py-3 px-4">PATIENT</th>
-                    <th className="py-3 px-4">ATTENDING DOCTOR</th>
-                    <th className="py-3 px-4">DATE & TIME</th>
-                    <th className="py-3 px-4">REASON / NOTES</th>
-                    <th className="py-3 px-4">STATUS</th>
-                    <th className="py-3 px-4 text-right">MANAGE STATUS</th>
+                  <tr className="text-slate-400 font-bold border-b border-slate-100 uppercase tracking-wider bg-slate-50/50">
+                    <th className="py-3 px-4">Patient</th>
+                    <th className="py-3 px-4">Attending Doctor</th>
+                    <th className="py-3 px-4">Date & Time</th>
+                    <th className="py-3 px-4">Reason / Notes</th>
+                    <th className="py-3 px-4">Status</th>
+                    <th className="py-3 px-4 text-right">Manage Status</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#dcdcde]">
+                <tbody className="divide-y divide-slate-100">
                   {filteredAppointments.map((app) => (
-                    <tr key={app._id} className="hover:bg-[#fcfcfc] transition-colors">
-                      <td className="py-3 px-4">
-                        <div className="font-semibold text-[#2c3338]">
+                    <tr key={app._id} className="hover:bg-slate-50/70 transition-colors">
+                      <td className="py-3.5 px-4">
+                        <div className="font-bold text-slate-900 text-sm">
                           {app.patient?.name || 'Unknown Patient'}
                         </div>
-                        <div className="text-xs text-[#50575e]">{app.patient?.email}</div>
+                        <div className="text-[11px] text-slate-400 font-mono">{app.patient?.email}</div>
                       </td>
-                      <td className="py-3 px-4">
-                        <div className="font-medium text-[#006088] flex items-center gap-1.5">
+                      <td className="py-3.5 px-4">
+                        <div className="font-semibold text-sky-700 flex items-center gap-1.5">
                           <Stethoscope className="w-3.5 h-3.5" />
                           Dr. {app.doctor?.name || 'Unassigned'}
                         </div>
                       </td>
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        <div className="font-medium text-[#2c3338]">
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <div className="font-medium text-slate-900">
                           {new Date(app.date).toLocaleDateString(undefined, {
                             month: 'short',
                             day: 'numeric',
                             year: 'numeric',
                           })}
                         </div>
-                        <div className="text-xs text-[#50575e] flex items-center gap-1 mt-0.5">
-                          <Clock className="w-3 h-3" />
+                        <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5 font-mono">
+                          <Clock className="w-3 h-3 text-slate-400" />
                           {app.time}
                         </div>
                       </td>
-                      <td className="py-3 px-4 max-w-xs truncate text-[#50575e]">
+                      <td className="py-3.5 px-4 max-w-xs truncate text-slate-600">
                         {app.reason}
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-3.5 px-4">
                         <span
-                          className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-medium ${
+                          className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full font-bold ${
                             app.status === 'CONFIRMED'
-                              ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                              ? 'bg-sky-50 text-sky-700 border border-sky-200'
                               : app.status === 'COMPLETED'
                               ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                               : app.status === 'CANCELLED'
@@ -235,13 +236,12 @@ const AppointmentsPage = () => {
                           ● {app.status}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1">
+                      <td className="py-3.5 px-4 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
                           {app.status === 'PENDING' && (
                             <button
                               onClick={() => handleStatusUpdate(app._id, 'CONFIRMED')}
-                              className="px-2 py-1 text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-sm border border-blue-200 cursor-pointer"
-                              title="Confirm Appointment"
+                              className="px-2.5 py-1 text-xs font-semibold bg-sky-50 text-sky-700 hover:bg-sky-100 rounded-lg border border-sky-200 cursor-pointer"
                             >
                               Confirm
                             </button>
@@ -249,8 +249,7 @@ const AppointmentsPage = () => {
                           {app.status === 'CONFIRMED' && (
                             <button
                               onClick={() => handleStatusUpdate(app._id, 'COMPLETED')}
-                              className="px-2 py-1 text-xs font-medium bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-sm border border-emerald-200 cursor-pointer"
-                              title="Mark Completed"
+                              className="px-2.5 py-1 text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg border border-emerald-200 cursor-pointer"
                             >
                               Complete
                             </button>
@@ -258,8 +257,7 @@ const AppointmentsPage = () => {
                           {app.status !== 'CANCELLED' && app.status !== 'COMPLETED' && (
                             <button
                               onClick={() => handleStatusUpdate(app._id, 'CANCELLED')}
-                              className="px-2 py-1 text-xs font-medium bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-sm border border-rose-200 cursor-pointer"
-                              title="Cancel Appointment"
+                              className="px-2 py-1 text-xs font-semibold bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-lg border border-rose-200 cursor-pointer"
                             >
                               Cancel
                             </button>
@@ -274,18 +272,18 @@ const AppointmentsPage = () => {
           )}
         </div>
 
-        {/* Modal: Schedule New Appointment */}
+        {/* Modal: Schedule Consultation */}
         {showModal && (
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-md border border-[#dcdcde] shadow-xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-              <div className="flex items-center justify-between px-6 py-4 border-b border-[#dcdcde] bg-[#f6f7f7]">
-                <h3 className="font-semibold text-[#2c3338] text-base flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-[#006088]" />
+          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-sky-600" />
                   Schedule Clinical Consultation
                 </h3>
                 <button
                   onClick={() => setShowModal(false)}
-                  className="text-gray-400 hover:text-gray-600 p-1 rounded-sm cursor-pointer"
+                  className="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -293,14 +291,14 @@ const AppointmentsPage = () => {
 
               <form onSubmit={handleCreate} className="p-6 space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-[#2c3338] uppercase mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
                     Select Patient *
                   </label>
                   <select
                     required
                     value={form.patient}
                     onChange={(e) => setForm({ ...form, patient: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-[#dcdcde] rounded-sm focus:outline-hidden focus:border-[#0087be] bg-white text-[#2c3338]"
+                    className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-hidden focus:border-sky-500 bg-white"
                   >
                     <option value="">-- Choose Registered Patient --</option>
                     {patients.map((p) => (
@@ -312,14 +310,14 @@ const AppointmentsPage = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[#2c3338] uppercase mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
                     Attending Physician *
                   </label>
                   <select
                     required
                     value={form.doctor}
                     onChange={(e) => setForm({ ...form, doctor: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-[#dcdcde] rounded-sm focus:outline-hidden focus:border-[#0087be] bg-white text-[#2c3338]"
+                    className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-hidden focus:border-sky-500 bg-white"
                   >
                     <option value="">-- Choose Doctor --</option>
                     {doctors.map((d) => (
@@ -332,7 +330,7 @@ const AppointmentsPage = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold text-[#2c3338] uppercase mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
                       Appointment Date *
                     </label>
                     <input
@@ -340,18 +338,18 @@ const AppointmentsPage = () => {
                       required
                       value={form.date}
                       onChange={(e) => setForm({ ...form, date: e.target.value })}
-                      className="w-full px-3 py-2 text-sm border border-[#dcdcde] rounded-sm focus:outline-hidden focus:border-[#0087be]"
+                      className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-hidden focus:border-sky-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-[#2c3338] uppercase mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
                       Time Slot *
                     </label>
                     <select
                       value={form.time}
                       onChange={(e) => setForm({ ...form, time: e.target.value })}
-                      className="w-full px-3 py-2 text-sm border border-[#dcdcde] rounded-sm focus:outline-hidden focus:border-[#0087be] bg-white text-[#2c3338]"
+                      className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-hidden focus:border-sky-500 bg-white"
                     >
                       {[
                         '09:00 AM',
@@ -377,7 +375,7 @@ const AppointmentsPage = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[#2c3338] uppercase mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
                     Clinical Reason / Symptoms
                   </label>
                   <textarea
@@ -385,21 +383,21 @@ const AppointmentsPage = () => {
                     value={form.reason}
                     onChange={(e) => setForm({ ...form, reason: e.target.value })}
                     placeholder="Chief complaint or purpose of checkup..."
-                    className="w-full px-3 py-2 text-sm border border-[#dcdcde] rounded-sm focus:outline-hidden focus:border-[#0087be]"
+                    className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-hidden focus:border-sky-500"
                   ></textarea>
                 </div>
 
-                <div className="pt-4 border-t border-[#dcdcde] flex justify-end gap-3">
+                <div className="pt-4 border-t border-slate-100 flex justify-end gap-2.5">
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}
-                    className="px-4 py-2 border border-[#dcdcde] text-sm text-[#50575e] hover:bg-[#f6f7f7] rounded-sm font-medium cursor-pointer"
+                    className="px-4 py-2 border border-slate-200 text-xs text-slate-600 hover:bg-slate-50 rounded-xl font-semibold cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-[#0087be] hover:bg-[#006088] text-white text-sm font-medium rounded-sm shadow-xs transition-colors cursor-pointer"
+                    className="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold rounded-xl shadow-xs shadow-sky-600/20 transition-all cursor-pointer"
                   >
                     Schedule & Save
                   </button>

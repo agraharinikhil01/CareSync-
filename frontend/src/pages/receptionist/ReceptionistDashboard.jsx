@@ -1,7 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
 import DashboardLayout from '../../layouts/DashboardLayout';
-import { Calendar, Bed, Users, Receipt, Plus, Clock, ArrowRight, CheckCircle2, XCircle } from 'lucide-react';
+import {
+  Calendar,
+  Bed,
+  Users,
+  Receipt,
+  Plus,
+  Clock,
+  ArrowRight,
+  CheckCircle2,
+  XCircle,
+  CalendarCheck,
+  UserPlus,
+  BedDouble,
+  Search,
+  Check,
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -42,137 +57,198 @@ const ReceptionistDashboard = () => {
     }
   };
 
+  const getTimeGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  };
+
   const todayStr = new Date().toISOString().split('T')[0];
   const todayAppointments = appointments.filter((a) => a.date?.startsWith(todayStr));
   const pendingAppointments = appointments.filter((a) => a.status === 'PENDING');
 
+  if (loading) {
+    return (
+      <DashboardLayout title="Front-Desk Dispatch">
+        <div className="space-y-6">
+          <div className="h-28 bg-white rounded-2xl border border-slate-200 animate-pulse"></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-32 bg-white rounded-2xl border border-slate-200 animate-pulse"></div>
+            ))}
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
-    <DashboardLayout>
+    <DashboardLayout title="Front-Desk Dispatch">
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#dcdcde] pb-4 bg-white p-6 rounded-md shadow-xs">
+        {/* Header Hero */}
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-semibold text-[#2c3338] tracking-tight">
-              Reception & Front-Desk Dispatch
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-teal-50 border border-teal-200/60 text-xs text-teal-800 font-semibold mb-2">
+              <CalendarCheck className="w-3.5 h-3.5 text-teal-600" />
+              <span>Reception & Triage Center</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
+              {getTimeGreeting()}, Front Desk
             </h1>
-            <p className="text-sm text-[#50575e] mt-1">
-              Patient check-ins, OPD queue management, bed allocation, and cashier billing operations.
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+              Manage today's front-desk intake, patient check-ins, and ward bed triage.
             </p>
           </div>
-          <div className="flex items-center gap-3">
+
+          {/* Quick Action Buttons (High Visibility) */}
+          <div className="flex items-center gap-2.5 flex-wrap">
             <Link
               to="/receptionist/appointments"
-              className="inline-flex items-center gap-2 px-3.5 py-2 bg-[#0087be] hover:bg-[#006088] text-white text-xs font-semibold rounded-sm shadow-xs transition-colors"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold shadow-xs shadow-sky-600/20 transition-all cursor-pointer"
             >
-              <Plus className="w-4 h-4" /> Book Appointment
+              <Plus className="w-4 h-4" />
+              <span>Book Appointment</span>
             </Link>
             <Link
               to="/receptionist/beds"
-              className="inline-flex items-center gap-2 px-3.5 py-2 bg-[#f6f7f7] hover:bg-[#eaeaea] text-[#2c3338] border border-[#dcdcde] text-xs font-semibold rounded-sm transition-colors"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold shadow-xs shadow-teal-600/20 transition-all cursor-pointer"
             >
-              <Bed className="w-4 h-4 text-[#006088]" /> Ward Beds
+              <BedDouble className="w-4 h-4" />
+              <span>Assign Bed</span>
+            </Link>
+            <Link
+              to="/receptionist/patients"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-semibold shadow-2xs transition-colors"
+            >
+              <UserPlus className="w-4 h-4 text-slate-500" />
+              <span>Register Patient</span>
+            </Link>
+            <Link
+              to="/receptionist/bills"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-semibold shadow-2xs transition-colors"
+            >
+              <Receipt className="w-4 h-4 text-slate-500" />
+              <span>Create Bill</span>
             </Link>
           </div>
         </div>
 
-        {/* 4 Metric Cards */}
+        {/* 4 KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white p-5 rounded-md border border-[#dcdcde] shadow-xs">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-[#50575e] uppercase">Today's OPD Queue</span>
-              <Calendar className="w-5 h-5 text-[#006088]" />
+          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                Today's OPD Queue
+              </span>
+              <div className="w-8 h-8 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center">
+                <Calendar className="w-4 h-4" />
+              </div>
             </div>
-            <h3 className="text-2xl font-bold text-[#2c3338] mt-2">{todayAppointments.length}</h3>
-            <span className="text-xs text-gray-400">Scheduled for today</span>
+            <div>
+              <h3 className="text-3xl font-extrabold text-slate-900">{todayAppointments.length}</h3>
+              <p className="text-[11px] text-slate-400 mt-1">Total appointments scheduled today</p>
+            </div>
           </div>
 
-          <div className="bg-white p-5 rounded-md border border-[#dcdcde] shadow-xs">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-[#50575e] uppercase">Awaiting Confirmation</span>
-              <Clock className="w-5 h-5 text-amber-600" />
+          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                Pending Intake
+              </span>
+              <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                <Clock className="w-4 h-4" />
+              </div>
             </div>
-            <h3 className="text-2xl font-bold text-amber-600 mt-2">{pendingAppointments.length}</h3>
-            <span className="text-xs text-amber-600">Pending intake check-in</span>
+            <div>
+              <h3 className="text-3xl font-extrabold text-amber-600">{pendingAppointments.length}</h3>
+              <p className="text-[11px] text-amber-700 mt-1">Awaiting confirmation or arrival</p>
+            </div>
           </div>
 
-          <div className="bg-white p-5 rounded-md border border-[#dcdcde] shadow-xs">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-[#50575e] uppercase">Bed Occupancy</span>
-              <Bed className="w-5 h-5 text-indigo-600" />
+          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                Available Beds
+              </span>
+              <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <Bed className="w-4 h-4" />
+              </div>
             </div>
-            <h3 className="text-2xl font-bold text-[#2c3338] mt-2">
-              {bedStats?.occupancyRate || 0}%
-            </h3>
-            <span className="text-xs text-indigo-600">
-              {bedStats?.occupied || 0} / {bedStats?.total || 0} beds occupied
-            </span>
+            <div>
+              <h3 className="text-3xl font-extrabold text-emerald-600">{bedStats?.available || 0}</h3>
+              <p className="text-[11px] text-emerald-700 mt-1">Ready for patient admission</p>
+            </div>
           </div>
 
-          <div className="bg-white p-5 rounded-md border border-[#dcdcde] shadow-xs">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-[#50575e] uppercase">Available Beds</span>
-              <Users className="w-5 h-5 text-emerald-600" />
+          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                Occupied Beds
+              </span>
+              <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+                <BedDouble className="w-4 h-4" />
+              </div>
             </div>
-            <h3 className="text-2xl font-bold text-emerald-600 mt-2">
-              {bedStats?.available || 0}
-            </h3>
-            <span className="text-xs text-emerald-600">Ready for admission</span>
+            <div>
+              <h3 className="text-3xl font-extrabold text-rose-600">{bedStats?.occupied || 0}</h3>
+              <p className="text-[11px] text-slate-400 mt-1">
+                {bedStats?.occupancyRate || 0}% overall ward occupancy
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Quick OPD Queue */}
-        <div className="bg-white rounded-md border border-[#dcdcde] shadow-xs overflow-hidden">
-          <div className="px-6 py-4 border-b border-[#dcdcde] flex items-center justify-between">
+        {/* Today's Intake Queue Table */}
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 overflow-hidden">
+          <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
             <div>
-              <h2 className="text-base font-semibold text-[#2c3338]">Today's Appointments Queue</h2>
-              <p className="text-xs text-[#50575e] mt-0.5">Quick patient check-in & status validation</p>
+              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <CalendarCheck className="w-4 h-4 text-sky-600" />
+                Today's Patient Queue & Check-In
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">Quick patient arrival confirmation</p>
             </div>
             <Link
               to="/receptionist/appointments"
-              className="text-xs font-semibold text-[#0087be] hover:underline flex items-center gap-1"
+              className="text-xs font-semibold text-sky-600 hover:text-sky-700 hover:underline flex items-center gap-1"
             >
               Full Ledger <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
-          {loading ? (
-            <div className="p-12 text-center">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-[#0087be] border-t-transparent"></div>
-              <p className="mt-3 text-sm text-[#50575e]">Loading appointments queue...</p>
-            </div>
-          ) : todayAppointments.length === 0 ? (
-            <div className="p-8 text-center">
-              <Calendar className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-              <p className="text-sm font-medium text-[#2c3338]">No consultations scheduled for today</p>
+          {todayAppointments.length === 0 ? (
+            <div className="p-10 text-center text-slate-400 text-xs">
+              No appointments scheduled for today
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-sm">
+              <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="bg-[#f6f7f7] text-[#50575e] font-semibold text-xs border-b border-[#dcdcde]">
-                    <th className="py-3 px-4">PATIENT</th>
-                    <th className="py-3 px-4">DOCTOR</th>
-                    <th className="py-3 px-4">TIME SLOT</th>
-                    <th className="py-3 px-4">STATUS</th>
-                    <th className="py-3 px-4 text-right">ACTION</th>
+                  <tr className="text-slate-400 font-bold border-b border-slate-100 uppercase tracking-wider">
+                    <th className="py-2.5 px-3">Patient</th>
+                    <th className="py-2.5 px-3">Attending Physician</th>
+                    <th className="py-2.5 px-3">Slot</th>
+                    <th className="py-2.5 px-3">Status</th>
+                    <th className="py-2.5 px-3 text-right">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#dcdcde]">
+                <tbody className="divide-y divide-slate-100">
                   {todayAppointments.map((app) => (
-                    <tr key={app._id} className="hover:bg-[#fcfcfc] transition-colors">
-                      <td className="py-3 px-4">
-                        <div className="font-semibold text-[#2c3338]">{app.patient?.name}</div>
-                        <div className="text-xs text-[#50575e]">{app.patient?.phone}</div>
+                    <tr key={app._id} className="hover:bg-slate-50/70 transition-colors">
+                      <td className="py-3 px-3">
+                        <p className="font-bold text-slate-900">{app.patient?.name}</p>
+                        <p className="text-[10px] text-slate-500 font-mono">{app.patient?.phone}</p>
                       </td>
-                      <td className="py-3 px-4 text-[#006088] font-medium">
+                      <td className="py-3 px-3 text-slate-700 font-medium">
                         Dr. {app.doctor?.name}
                       </td>
-                      <td className="py-3 px-4 font-mono text-xs">{app.time}</td>
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-3 font-mono text-slate-600">{app.time}</td>
+                      <td className="py-3 px-3">
                         <span
-                          className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-medium ${
+                          className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full font-semibold ${
                             app.status === 'CONFIRMED'
-                              ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                              ? 'bg-sky-50 text-sky-700 border border-sky-200'
                               : app.status === 'COMPLETED'
                               ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                               : app.status === 'CANCELLED'
@@ -183,12 +259,12 @@ const ReceptionistDashboard = () => {
                           ● {app.status}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-right">
+                      <td className="py-3 px-3 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           {app.status === 'PENDING' && (
                             <button
                               onClick={() => handleStatusUpdate(app._id, 'CONFIRMED')}
-                              className="px-2.5 py-1 text-xs font-semibold bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-sm border border-blue-200 cursor-pointer"
+                              className="px-2.5 py-1 text-xs font-semibold bg-sky-50 text-sky-700 hover:bg-sky-100 rounded-lg border border-sky-200 transition-colors cursor-pointer"
                             >
                               Confirm
                             </button>
@@ -196,17 +272,9 @@ const ReceptionistDashboard = () => {
                           {app.status === 'CONFIRMED' && (
                             <button
                               onClick={() => handleStatusUpdate(app._id, 'COMPLETED')}
-                              className="px-2.5 py-1 text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-sm border border-emerald-200 cursor-pointer"
+                              className="px-2.5 py-1 text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg border border-emerald-200 transition-colors cursor-pointer"
                             >
-                              Check-In / Done
-                            </button>
-                          )}
-                          {app.status !== 'CANCELLED' && app.status !== 'COMPLETED' && (
-                            <button
-                              onClick={() => handleStatusUpdate(app._id, 'CANCELLED')}
-                              className="px-2 py-1 text-xs font-medium bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-sm border border-rose-200 cursor-pointer"
-                            >
-                              Cancel
+                              Check-In
                             </button>
                           )}
                         </div>

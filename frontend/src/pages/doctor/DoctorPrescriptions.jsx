@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
 import DashboardLayout from '../../layouts/DashboardLayout';
-import { FileText, Plus, Search, Download, Trash2, X, Check, Calendar, Stethoscope, QrCode } from 'lucide-react';
+import { FileText, Plus, Search, Download, Trash2, X, Check, Calendar, Stethoscope, QrCode, Sparkles, Pill, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const DoctorPrescriptions = () => {
@@ -102,7 +102,7 @@ const DoctorPrescriptions = () => {
 
       const res = await api.post('/prescriptions', payload);
       if (res.data.success) {
-        toast.success('Prescription generated and signed');
+        toast.success('Prescription generated and digitally signed');
         setShowModal(false);
         setForm({
           patient: '',
@@ -150,112 +150,128 @@ const DoctorPrescriptions = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#dcdcde] pb-4 bg-white p-6 rounded-md shadow-xs">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="p-2 bg-[#e6f4f8] text-[#006088] rounded-md">
-                <FileText className="w-6 h-6" />
-              </span>
-              <h1 className="text-2xl font-semibold text-[#2c3338] tracking-tight">Prescriptions Registry</h1>
+      <div className="space-y-6 max-w-7xl mx-auto">
+        {/* Header Banner */}
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-sky-600 to-indigo-600 text-white flex items-center justify-center shadow-md shadow-sky-500/20">
+              <FileText className="w-6 h-6" />
             </div>
-            <p className="text-sm text-[#50575e] mt-1">
-              Issue tamper-proof Rx with medicine dosage, clinical advice, QR verification, and instant PDF generation.
-            </p>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+                  Prescriptions Registry
+                </h1>
+                <span className="text-[11px] font-semibold tracking-wide uppercase px-2.5 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-200/80">
+                  Digital Rx
+                </span>
+              </div>
+              <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                Issue tamper-proof Rx with structured medication schedules, clinical advice, QR validation, and PDF export.
+              </p>
+            </div>
           </div>
+
           <button
             onClick={() => setShowModal(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-[#0087be] hover:bg-[#006088] text-white text-sm font-medium rounded-sm shadow-xs transition-colors cursor-pointer"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-sky-600 to-teal-600 hover:from-sky-700 hover:to-teal-700 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             Write Prescription
           </button>
         </div>
 
-        {/* Search */}
-        <div className="bg-white p-4 rounded-md border border-[#dcdcde] shadow-xs flex items-center justify-between">
+        {/* Search Bar */}
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between gap-4">
           <div className="relative w-full max-w-md">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by patient name or diagnosis..."
-              className="w-full pl-9 pr-3 py-2 text-sm border border-[#dcdcde] rounded-sm focus:outline-hidden focus:border-[#0087be]"
+              className="w-full pl-10 pr-3.5 py-2 text-xs sm:text-sm rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-hidden focus:border-sky-500 focus:ring-3 focus:ring-sky-500/15 transition-all text-slate-800 placeholder:text-slate-400"
             />
           </div>
-          <span className="text-xs text-[#50575e] font-medium hidden sm:inline">
-            Total Prescriptions: {filteredPrescriptions.length}
+          <span className="text-xs text-slate-500 font-medium hidden sm:inline">
+            Total Prescriptions: <strong className="text-slate-800">{filteredPrescriptions.length}</strong>
           </span>
         </div>
 
         {/* Prescription Table */}
-        <div className="bg-white rounded-md border border-[#dcdcde] shadow-xs overflow-hidden">
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
           {loading ? (
-            <div className="p-12 text-center">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-[#0087be] border-t-transparent"></div>
-              <p className="mt-3 text-sm text-[#50575e]">Loading prescriptions...</p>
+            <div className="p-16 text-center">
+              <div className="inline-block animate-spin rounded-full h-9 w-9 border-3 border-sky-600 border-t-transparent"></div>
+              <p className="mt-3 text-xs sm:text-sm font-medium text-slate-500">Loading prescriptions archive...</p>
             </div>
           ) : filteredPrescriptions.length === 0 ? (
-            <div className="p-12 text-center">
-              <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-base font-medium text-[#2c3338]">No prescriptions found</p>
-              <p className="text-sm text-[#50575e] mt-1">Click "Write Prescription" to author a new Rx.</p>
+            <div className="p-16 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-3 text-slate-400">
+                <FileText className="w-7 h-7" />
+              </div>
+              <p className="text-base font-semibold text-slate-800">No prescriptions found</p>
+              <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+                Click "Write Prescription" above to author a new clinically-verified digital Rx.
+              </p>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-sm">
+              <table className="w-full text-left border-collapse text-xs sm:text-sm">
                 <thead>
-                  <tr className="bg-[#f6f7f7] text-[#50575e] font-semibold text-xs border-b border-[#dcdcde]">
-                    <th className="py-3 px-4">PATIENT</th>
-                    <th className="py-3 px-4">DIAGNOSIS</th>
-                    <th className="py-3 px-4">MEDICINES</th>
-                    <th className="py-3 px-4">DATE ISSUED</th>
-                    <th className="py-3 px-4 text-center">QR CODE</th>
-                    <th className="py-3 px-4 text-right">PDF EXPORT</th>
+                  <tr className="bg-slate-50/80 text-slate-500 font-semibold text-[11px] uppercase tracking-wider border-b border-slate-200/80">
+                    <th className="py-3.5 px-5">Patient</th>
+                    <th className="py-3.5 px-5">Diagnosis & Symptoms</th>
+                    <th className="py-3.5 px-5">Medications (Rx)</th>
+                    <th className="py-3.5 px-5">Date Issued</th>
+                    <th className="py-3.5 px-5 text-center">Verification QR</th>
+                    <th className="py-3.5 px-5 text-right">PDF Export</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#dcdcde]">
+                <tbody className="divide-y divide-slate-100">
                   {filteredPrescriptions.map((rx) => (
-                    <tr key={rx._id} className="hover:bg-[#fcfcfc] transition-colors">
-                      <td className="py-3 px-4">
-                        <div className="font-semibold text-[#2c3338]">{rx.patient?.name}</div>
-                        <div className="text-xs text-[#50575e]">{rx.patient?.email}</div>
+                    <tr key={rx._id} className="hover:bg-slate-50/60 transition-colors">
+                      <td className="py-3.5 px-5">
+                        <div className="font-semibold text-slate-900">{rx.patient?.name || 'Unknown Patient'}</div>
+                        <div className="text-[11px] text-slate-500">{rx.patient?.email}</div>
                       </td>
-                      <td className="py-3 px-4">
-                        <div className="font-medium text-[#006088]">{rx.diagnosis}</div>
+                      <td className="py-3.5 px-5">
+                        <div className="font-semibold text-sky-800">{rx.diagnosis}</div>
                         {rx.symptoms && rx.symptoms.length > 0 && (
-                          <div className="text-xs text-[#50575e] truncate max-w-xs">
+                          <div className="text-[11px] text-slate-500 truncate max-w-xs mt-0.5">
                             Symptoms: {rx.symptoms.join(', ')}
                           </div>
                         )}
                       </td>
-                      <td className="py-3 px-4 text-xs text-[#50575e] max-w-xs truncate">
+                      <td className="py-3.5 px-5 text-xs text-slate-600 max-w-xs truncate">
                         {rx.medicines?.map((m) => `${m.name} (${m.dosage})`).join(', ')}
                       </td>
-                      <td className="py-3 px-4 whitespace-nowrap text-[#50575e]">
-                        {new Date(rx.createdAt).toLocaleDateString()}
+                      <td className="py-3.5 px-5 whitespace-nowrap text-slate-500">
+                        {new Date(rx.createdAt).toLocaleDateString(undefined, {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })}
                       </td>
-                      <td className="py-3 px-4 text-center">
+                      <td className="py-3.5 px-5 text-center">
                         {rx.qrCode ? (
                           <button
                             onClick={() => setQrModal(rx)}
-                            className="p-1 text-gray-500 hover:text-[#0087be] inline-block cursor-pointer"
+                            className="p-1.5 text-slate-500 hover:text-sky-600 hover:bg-slate-100 rounded-lg inline-block transition-colors cursor-pointer"
                             title="View Verification QR"
                           >
                             <QrCode className="w-5 h-5 mx-auto" />
                           </button>
                         ) : (
-                          <span className="text-xs text-gray-400">N/A</span>
+                          <span className="text-xs text-slate-400">N/A</span>
                         )}
                       </td>
-                      <td className="py-3 px-4 text-right">
+                      <td className="py-3.5 px-5 text-right">
                         <button
                           onClick={() => handleDownloadPDF(rx._id)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#f6f7f7] hover:bg-[#eaeaea] text-[#2c3338] border border-[#dcdcde] text-xs font-semibold rounded-sm transition-colors cursor-pointer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs rounded-lg transition-colors cursor-pointer"
                         >
-                          <Download className="w-3.5 h-3.5 text-[#006088]" />
+                          <Download className="w-3.5 h-3.5 text-sky-600" />
                           Download PDF
                         </button>
                       </td>
@@ -269,32 +285,37 @@ const DoctorPrescriptions = () => {
 
         {/* Modal: Write Prescription */}
         {showModal && (
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-md border border-[#dcdcde] shadow-xl w-full max-w-3xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-              <div className="flex items-center justify-between px-6 py-4 border-b border-[#dcdcde] bg-[#f6f7f7]">
-                <h3 className="font-semibold text-[#2c3338] text-base flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-[#006088]" />
-                  Author Clinical Prescription
-                </h3>
+          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
+            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xl w-full max-w-3xl overflow-hidden animate-in zoom-in-95 duration-150">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-900 text-base">Author Clinical Prescription</h3>
+                    <p className="text-[11px] text-slate-500">Sign with automatic digital verification hash</p>
+                  </div>
+                </div>
                 <button
                   onClick={() => setShowModal(false)}
-                  className="text-gray-400 hover:text-gray-600 p-1 rounded-sm cursor-pointer"
+                  className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <form onSubmit={handleCreatePrescription} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+              <form onSubmit={handleCreatePrescription} className="p-6 space-y-4 max-h-[78vh] overflow-y-auto">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold text-[#2c3338] uppercase mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
                       Select Patient *
                     </label>
                     <select
                       required
                       value={form.patient}
                       onChange={(e) => setForm({ ...form, patient: e.target.value })}
-                      className="w-full px-3 py-2 text-sm border border-[#dcdcde] rounded-sm focus:outline-hidden focus:border-[#0087be] bg-white text-[#2c3338]"
+                      className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-hidden focus:border-sky-500 focus:ring-3 focus:ring-sky-500/15"
                     >
                       <option value="">-- Choose Patient --</option>
                       {patients.map((p) => (
@@ -306,8 +327,8 @@ const DoctorPrescriptions = () => {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-[#2c3338] uppercase mb-1">
-                      Diagnosis *
+                    <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                      Clinical Diagnosis *
                     </label>
                     <input
                       type="text"
@@ -315,34 +336,34 @@ const DoctorPrescriptions = () => {
                       placeholder="e.g. Acute Bronchitis, Essential Hypertension"
                       value={form.diagnosis}
                       onChange={(e) => setForm({ ...form, diagnosis: e.target.value })}
-                      className="w-full px-3 py-2 text-sm border border-[#dcdcde] rounded-sm focus:outline-hidden focus:border-[#0087be]"
+                      className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-hidden focus:border-sky-500 focus:ring-3 focus:ring-sky-500/15 placeholder:text-slate-400"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[#2c3338] uppercase mb-1">
-                    Symptoms (Comma separated)
+                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                    Presenting Symptoms (Comma separated)
                   </label>
                   <input
                     type="text"
                     placeholder="e.g. High fever, persistent cough, shortness of breath"
                     value={form.symptoms}
                     onChange={(e) => setForm({ ...form, symptoms: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-[#dcdcde] rounded-sm focus:outline-hidden focus:border-[#0087be]"
+                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-hidden focus:border-sky-500 focus:ring-3 focus:ring-sky-500/15 placeholder:text-slate-400"
                   />
                 </div>
 
                 {/* Medicines List */}
-                <div>
+                <div className="pt-2">
                   <div className="flex items-center justify-between mb-2">
-                    <label className="text-xs font-semibold text-[#2c3338] uppercase">
-                      Prescribed Medications (Rx) *
+                    <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                      <Pill className="w-3.5 h-3.5 text-sky-600" /> Prescribed Medications (Rx) *
                     </label>
                     <button
                       type="button"
                       onClick={addMedicineRow}
-                      className="text-xs text-[#0087be] hover:underline font-medium flex items-center gap-1 cursor-pointer"
+                      className="text-xs text-sky-600 hover:text-sky-700 font-semibold flex items-center gap-1 cursor-pointer"
                     >
                       <Plus className="w-3.5 h-3.5" /> Add Medication
                     </button>
@@ -350,7 +371,7 @@ const DoctorPrescriptions = () => {
 
                   <div className="space-y-3">
                     {form.medicines.map((med, idx) => (
-                      <div key={idx} className="p-3 bg-[#f6f7f7] rounded-sm border border-[#dcdcde] space-y-2">
+                      <div key={idx} className="p-3.5 bg-slate-50/70 rounded-xl border border-slate-200/80 space-y-2.5">
                         <div className="flex gap-2 items-center">
                           <input
                             type="text"
@@ -358,20 +379,20 @@ const DoctorPrescriptions = () => {
                             placeholder="Medicine Name (e.g. Amoxicillin 500mg)"
                             value={med.name}
                             onChange={(e) => updateMedicine(idx, 'name', e.target.value)}
-                            className="flex-1 px-3 py-1.5 text-sm bg-white border border-[#dcdcde] rounded-sm focus:outline-hidden focus:border-[#0087be]"
+                            className="flex-1 px-3 py-1.5 text-xs sm:text-sm bg-white border border-slate-200 rounded-lg focus:outline-hidden focus:border-sky-500"
                           />
                           <input
                             type="text"
                             placeholder="Dosage (e.g. 1 tab)"
                             value={med.dosage}
                             onChange={(e) => updateMedicine(idx, 'dosage', e.target.value)}
-                            className="w-28 px-2 py-1.5 text-sm bg-white border border-[#dcdcde] rounded-sm focus:outline-hidden focus:border-[#0087be]"
+                            className="w-28 px-2.5 py-1.5 text-xs sm:text-sm bg-white border border-slate-200 rounded-lg focus:outline-hidden focus:border-sky-500"
                           />
                           {form.medicines.length > 1 && (
                             <button
                               type="button"
                               onClick={() => removeMedicineRow(idx)}
-                              className="text-gray-400 hover:text-rose-600 p-1 cursor-pointer"
+                              className="text-slate-400 hover:text-rose-600 p-1.5 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -383,21 +404,21 @@ const DoctorPrescriptions = () => {
                             placeholder="Frequency (e.g. TDS / 3x daily)"
                             value={med.frequency}
                             onChange={(e) => updateMedicine(idx, 'frequency', e.target.value)}
-                            className="px-2.5 py-1 text-xs bg-white border border-[#dcdcde] rounded-sm"
+                            className="px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg"
                           />
                           <input
                             type="text"
                             placeholder="Duration (e.g. 5 days)"
                             value={med.duration}
                             onChange={(e) => updateMedicine(idx, 'duration', e.target.value)}
-                            className="px-2.5 py-1 text-xs bg-white border border-[#dcdcde] rounded-sm"
+                            className="px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg"
                           />
                           <input
                             type="text"
                             placeholder="Instructions (e.g. After food)"
                             value={med.instructions}
                             onChange={(e) => updateMedicine(idx, 'instructions', e.target.value)}
-                            className="px-2.5 py-1 text-xs bg-white border border-[#dcdcde] rounded-sm"
+                            className="px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg"
                           />
                         </div>
                       </div>
@@ -405,9 +426,9 @@ const DoctorPrescriptions = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                   <div>
-                    <label className="block text-xs font-semibold text-[#2c3338] uppercase mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
                       Lab Tests Recommended (Comma separated)
                     </label>
                     <input
@@ -415,46 +436,46 @@ const DoctorPrescriptions = () => {
                       placeholder="e.g. Complete Blood Count (CBC), Chest X-Ray"
                       value={form.labTests}
                       onChange={(e) => setForm({ ...form, labTests: e.target.value })}
-                      className="w-full px-3 py-2 text-sm border border-[#dcdcde] rounded-sm focus:outline-hidden focus:border-[#0087be]"
+                      className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-hidden focus:border-sky-500 focus:ring-3 focus:ring-sky-500/15 placeholder:text-slate-400"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-[#2c3338] uppercase mb-1">
-                      Follow-up Date
+                    <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                      Follow-up Consultation Date
                     </label>
                     <input
                       type="date"
                       value={form.followUpDate}
                       onChange={(e) => setForm({ ...form, followUpDate: e.target.value })}
-                      className="w-full px-3 py-2 text-sm border border-[#dcdcde] rounded-sm focus:outline-hidden focus:border-[#0087be]"
+                      className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-hidden focus:border-sky-500 focus:ring-3 focus:ring-sky-500/15"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[#2c3338] uppercase mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
                     Dietary & Lifestyle Advice
                   </label>
                   <textarea
                     rows="2"
                     value={form.advice}
                     onChange={(e) => setForm({ ...form, advice: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-[#dcdcde] rounded-sm focus:outline-hidden focus:border-[#0087be]"
+                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-hidden focus:border-sky-500 focus:ring-3 focus:ring-sky-500/15 placeholder:text-slate-400"
                   ></textarea>
                 </div>
 
-                <div className="pt-4 border-t border-[#dcdcde] flex justify-end gap-3">
+                <div className="pt-4 border-t border-slate-100 flex justify-end gap-2.5">
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}
-                    className="px-4 py-2 border border-[#dcdcde] text-sm text-[#50575e] hover:bg-[#f6f7f7] rounded-sm font-medium cursor-pointer"
+                    className="px-4 py-2 border border-slate-200 text-xs sm:text-sm text-slate-600 hover:bg-slate-50 rounded-xl font-semibold cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-[#0087be] hover:bg-[#006088] text-white text-sm font-medium rounded-sm shadow-xs transition-colors cursor-pointer"
+                    className="px-5 py-2 bg-gradient-to-r from-sky-600 to-teal-600 hover:from-sky-700 hover:to-teal-700 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition-all cursor-pointer"
                   >
                     Sign & Issue Prescription
                   </button>
@@ -466,21 +487,24 @@ const DoctorPrescriptions = () => {
 
         {/* QR Code Inspection Modal */}
         {qrModal && (
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-md border border-[#dcdcde] shadow-xl w-full max-w-sm p-6 text-center animate-in fade-in zoom-in-95 duration-150">
-              <h3 className="font-semibold text-[#2c3338] text-base mb-1">Prescription Verification QR</h3>
-              <p className="text-xs text-[#50575e] mb-4">
+          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
+            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xl w-full max-w-sm p-6 text-center animate-in zoom-in-95 duration-150">
+              <div className="w-12 h-12 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center mx-auto mb-3">
+                <QrCode className="w-6 h-6" />
+              </div>
+              <h3 className="font-bold text-slate-900 text-base mb-1">Prescription Verification QR</h3>
+              <p className="text-xs text-slate-500 mb-4">
                 Rx for {qrModal.patient?.name} · Signed by Dr. {qrModal.doctor?.name}
               </p>
-              <div className="bg-white p-4 border border-[#dcdcde] rounded-sm inline-block shadow-inner">
-                <img src={qrModal.qrCode} alt="Rx QR Code" className="w-48 h-48 mx-auto" />
+              <div className="bg-white p-4 border border-slate-200 rounded-xl inline-block shadow-inner">
+                <img src={qrModal.qrCode} alt="Rx QR Code" className="w-44 h-44 mx-auto" />
               </div>
-              <p className="text-[11px] font-mono text-gray-500 mt-3 truncate">
+              <p className="text-[11px] font-mono text-slate-400 mt-3 truncate">
                 Hash: {qrModal.verificationHash}
               </p>
               <button
                 onClick={() => setQrModal(null)}
-                className="mt-5 w-full py-2 bg-[#f6f7f7] hover:bg-[#eaeaea] text-[#2c3338] border border-[#dcdcde] text-sm font-medium rounded-sm cursor-pointer"
+                className="mt-5 w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs sm:text-sm font-semibold rounded-xl transition-colors cursor-pointer"
               >
                 Close Window
               </button>

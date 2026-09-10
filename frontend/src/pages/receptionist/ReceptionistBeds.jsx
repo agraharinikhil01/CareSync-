@@ -1,7 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
 import DashboardLayout from '../../layouts/DashboardLayout';
-import { Bed, User, ArrowRightLeft, LogOut, Wrench, Plus, RefreshCw, X, Check, ShieldCheck } from 'lucide-react';
+import {
+  Bed,
+  User,
+  ArrowRightLeft,
+  LogOut,
+  Wrench,
+  Plus,
+  RefreshCw,
+  X,
+  Layers,
+  Sparkles,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const FLOORS = [
@@ -112,7 +123,12 @@ const ReceptionistBeds = () => {
   };
 
   const handleDischarge = async (bed) => {
-    if (!window.confirm(`Discharge patient ${bed.currentPatient?.name} from Bed ${bed.bedNumber}? An automated inpatient bill will be generated.`)) return;
+    if (
+      !window.confirm(
+        `Discharge patient ${bed.currentPatient?.name} from Bed ${bed.bedNumber}? An inpatient invoice will be issued.`
+      )
+    )
+      return;
 
     try {
       const res = await api.post(`/beds/${bed._id}/discharge`);
@@ -142,21 +158,20 @@ const ReceptionistBeds = () => {
   const availableBeds = beds.filter((b) => b.status === 'AVAILABLE');
 
   return (
-    <DashboardLayout>
+    <DashboardLayout title="Inpatient Bed Matrix & Admissions">
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#dcdcde] pb-4 bg-white p-6 rounded-md shadow-xs">
+        {/* Header Hero */}
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="p-2 bg-[#e6f4f8] text-[#006088] rounded-md">
-                <Bed className="w-6 h-6" />
-              </span>
-              <h1 className="text-2xl font-semibold text-[#2c3338] tracking-tight">
-                4-Floor Inpatient Bed Matrix & Admissions
-              </h1>
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-teal-50 border border-teal-200/60 text-xs text-teal-800 font-semibold mb-2">
+              <Layers className="w-3.5 h-3.5 text-teal-600" />
+              <span>Ward Triage & Bed Allocation</span>
             </div>
-            <p className="text-sm text-[#50575e] mt-1">
-              Floor-by-floor ward layout, patient admissions, bed transfers, and automated discharge invoicing.
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+              4-Floor Bed Matrix & Admissions
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+              Admit walk-in patients, transfer wards, execute discharges, and toggle sanitation modes.
             </p>
           </div>
           <button
@@ -164,44 +179,45 @@ const ReceptionistBeds = () => {
               fetchBeds();
               fetchStats();
             }}
-            className="inline-flex items-center gap-2 px-3.5 py-2 bg-[#f6f7f7] hover:bg-[#eaeaea] text-[#2c3338] border border-[#dcdcde] text-sm font-medium rounded-sm shadow-xs transition-colors cursor-pointer"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-semibold rounded-xl shadow-2xs transition-colors cursor-pointer"
           >
-            <RefreshCw className="w-4 h-4 text-gray-500" /> Refresh Grid
+            <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
+            <span>Refresh Beds</span>
           </button>
         </div>
 
         {/* 4 Stats Chips */}
         {stats && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="bg-white p-4 rounded-md border border-[#dcdcde] shadow-xs">
-              <span className="text-xs font-semibold text-gray-500 uppercase">Total Ward Capacity</span>
-              <p className="text-2xl font-bold text-[#2c3338] mt-1">{stats.total}</p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+            <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs">
+              <span className="text-xs font-semibold text-slate-500 uppercase">Ward Capacity</span>
+              <p className="text-2xl font-extrabold text-slate-900 mt-1">{stats.total}</p>
             </div>
-            <div className="bg-white p-4 rounded-md border border-emerald-200 bg-emerald-50/20 shadow-xs">
+            <div className="bg-white p-4 rounded-xl border border-emerald-200/80 bg-emerald-50/20 shadow-2xs">
               <span className="text-xs font-semibold text-emerald-800 uppercase">Available</span>
-              <p className="text-2xl font-bold text-emerald-600 mt-1">{stats.available}</p>
+              <p className="text-2xl font-extrabold text-emerald-600 mt-1">{stats.available}</p>
             </div>
-            <div className="bg-white p-4 rounded-md border border-rose-200 bg-rose-50/20 shadow-xs">
+            <div className="bg-white p-4 rounded-xl border border-rose-200/80 bg-rose-50/20 shadow-2xs">
               <span className="text-xs font-semibold text-rose-800 uppercase">Occupied</span>
-              <p className="text-2xl font-bold text-rose-600 mt-1">{stats.occupied}</p>
+              <p className="text-2xl font-extrabold text-rose-600 mt-1">{stats.occupied}</p>
             </div>
-            <div className="bg-white p-4 rounded-md border border-amber-200 bg-amber-50/20 shadow-xs">
-              <span className="text-xs font-semibold text-amber-800 uppercase">Maintenance</span>
-              <p className="text-2xl font-bold text-amber-600 mt-1">{stats.maintenance}</p>
+            <div className="bg-white p-4 rounded-xl border border-amber-200/80 bg-amber-50/20 shadow-2xs">
+              <span className="text-xs font-semibold text-amber-800 uppercase">Sanitization</span>
+              <p className="text-2xl font-extrabold text-amber-600 mt-1">{stats.maintenance}</p>
             </div>
           </div>
         )}
 
         {/* Floor Tabs */}
-        <div className="bg-white p-2 rounded-md border border-[#dcdcde] shadow-xs flex items-center gap-1 overflow-x-auto">
+        <div className="bg-white p-2 rounded-2xl border border-slate-200/80 shadow-xs flex items-center gap-1.5 overflow-x-auto">
           {FLOORS.map((f) => (
             <button
               key={f.floor}
               onClick={() => setSelectedFloor(f.floor)}
-              className={`px-4 py-2 text-xs font-semibold rounded-sm transition-colors cursor-pointer whitespace-nowrap ${
+              className={`px-4 py-2 text-xs font-semibold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
                 selectedFloor === f.floor
-                  ? 'bg-[#006088] text-white'
-                  : 'text-[#50575e] hover:bg-[#f6f7f7] hover:text-[#2c3338]'
+                  ? 'bg-sky-600 text-white shadow-xs shadow-sky-600/20'
+                  : 'text-slate-600 hover:bg-slate-100'
               }`}
             >
               {f.label}
@@ -211,37 +227,41 @@ const ReceptionistBeds = () => {
 
         {/* Bed Cards Grid */}
         {loading ? (
-          <div className="p-12 text-center bg-white rounded-md border border-[#dcdcde]">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-[#0087be] border-t-transparent"></div>
-            <p className="mt-3 text-sm text-[#50575e]">Updating bed statuses across hospital wings...</p>
+          <div className="p-16 text-center bg-white rounded-2xl border border-slate-200">
+            <div className="w-8 h-8 border-3 border-sky-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+            <p className="text-xs text-slate-500">Loading beds...</p>
           </div>
         ) : beds.length === 0 ? (
-          <div className="p-12 text-center bg-white rounded-md border border-[#dcdcde]">
-            <Bed className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-            <p className="text-base font-medium text-[#2c3338]">No beds located on this floor</p>
+          <div className="p-16 text-center bg-white rounded-2xl border border-slate-200">
+            <Bed className="w-12 h-12 text-slate-300 mx-auto mb-2" />
+            <p className="text-sm font-semibold text-slate-700">No beds located on this floor</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {beds.map((b) => (
               <div
                 key={b._id}
-                className={`bg-white rounded-md border p-4 shadow-xs flex flex-col justify-between transition-all ${
+                className={`bg-white rounded-2xl border p-4 shadow-xs flex flex-col justify-between transition-all hover:shadow-md ${
                   b.status === 'AVAILABLE'
-                    ? 'border-emerald-200 hover:border-emerald-400'
+                    ? 'border-emerald-200/90'
                     : b.status === 'OCCUPIED'
-                    ? 'border-rose-200 hover:border-rose-400'
-                    : 'border-amber-200 hover:border-amber-400'
+                    ? 'border-rose-200/90'
+                    : 'border-amber-200/90'
                 }`}
               >
                 <div>
                   <div className="flex items-start justify-between">
                     <div>
-                      <span className="text-[11px] font-bold text-gray-400">FL {b.floor}</span>
-                      <h4 className="font-bold text-lg text-[#2c3338] leading-tight">{b.bedNumber}</h4>
-                      <p className="text-xs text-[#006088] font-medium mt-0.5">{b.wardType}</p>
+                      <span className="text-[10px] font-bold text-slate-400 font-mono">
+                        FL {b.floor}
+                      </span>
+                      <h4 className="font-extrabold text-xl text-slate-900 leading-tight">
+                        {b.bedNumber}
+                      </h4>
+                      <p className="text-xs text-sky-700 font-medium mt-0.5">{b.wardType}</p>
                     </div>
                     <span
-                      className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${
+                      className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold ${
                         b.status === 'AVAILABLE'
                           ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                           : b.status === 'OCCUPIED'
@@ -249,23 +269,23 @@ const ReceptionistBeds = () => {
                           : 'bg-amber-50 text-amber-700 border border-amber-200'
                       }`}
                     >
-                      {b.status}
+                      ● {b.status}
                     </span>
                   </div>
 
-                  <div className="mt-3 pt-3 border-t border-gray-100 text-xs space-y-1">
-                    <div className="flex justify-between text-gray-500">
-                      <span>Daily Rate:</span>
-                      <span className="font-semibold text-[#2c3338]">₹{b.dailyRate} / day</span>
+                  <div className="mt-4 pt-3 border-t border-slate-100 text-xs space-y-1.5">
+                    <div className="flex justify-between text-slate-500">
+                      <span>Daily Tariff:</span>
+                      <span className="font-bold text-slate-900">₹{b.dailyRate} / day</span>
                     </div>
 
                     {b.status === 'OCCUPIED' && b.currentPatient ? (
-                      <div className="mt-2 p-2.5 bg-rose-50/60 rounded-sm border border-rose-100">
-                        <p className="text-xs font-semibold text-rose-900 flex items-center gap-1">
+                      <div className="mt-2 p-2.5 bg-rose-50/70 rounded-xl border border-rose-100">
+                        <p className="text-xs font-bold text-rose-900 flex items-center gap-1.5">
                           <User className="w-3.5 h-3.5 text-rose-600" />
                           {b.currentPatient.name}
                         </p>
-                        <p className="text-[10px] text-gray-500 mt-1">
+                        <p className="text-[10px] text-slate-500 mt-1">
                           Admitted: {new Date(b.admissionDate).toLocaleDateString()}
                         </p>
                       </div>
@@ -275,40 +295,41 @@ const ReceptionistBeds = () => {
                       </p>
                     ) : (
                       <p className="text-xs text-emerald-600 font-medium pt-1">
-                        ● Available for immediate admission
+                        ✓ Ready for admission
                       </p>
                     )}
                   </div>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between gap-1 flex-wrap">
+                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-1.5 flex-wrap">
                   {b.status === 'AVAILABLE' && (
                     <button
                       onClick={() => {
                         setAssignModalBed(b);
                         setSelectedPatientId('');
                       }}
-                      className="w-full py-1.5 bg-[#0087be] hover:bg-[#006088] text-white text-xs font-semibold rounded-sm transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                      className="w-full py-2 bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs shadow-sky-600/20"
                     >
-                      <Plus className="w-3.5 h-3.5" /> Admit Patient
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Admit Patient</span>
                     </button>
                   )}
 
                   {b.status === 'OCCUPIED' && (
-                    <div className="flex items-center gap-1 w-full">
+                    <div className="flex items-center gap-1.5 w-full">
                       <button
                         onClick={() => {
                           setTransferModalBed(b);
                           setTargetBedId('');
                         }}
-                        className="flex-1 py-1 bg-gray-100 hover:bg-gray-200 text-[#2c3338] text-xs font-medium rounded-sm transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                        className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-1 cursor-pointer"
                         title="Transfer Patient to another bed"
                       >
                         <ArrowRightLeft className="w-3 h-3" /> Transfer
                       </button>
                       <button
                         onClick={() => handleDischarge(b)}
-                        className="flex-1 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold rounded-sm transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                        className="flex-1 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-1 cursor-pointer"
                         title="Discharge patient and generate billing invoice"
                       >
                         <LogOut className="w-3 h-3" /> Discharge
@@ -319,7 +340,7 @@ const ReceptionistBeds = () => {
                   {b.status === 'MAINTENANCE' && (
                     <button
                       onClick={() => handleToggleMaintenance(b._id)}
-                      className="w-full py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-semibold rounded-sm transition-colors cursor-pointer"
+                      className="w-full py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
                     >
                       Mark Ready & Available
                     </button>
@@ -332,23 +353,23 @@ const ReceptionistBeds = () => {
 
         {/* Modal: Admit Patient */}
         {assignModalBed && (
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-md border border-[#dcdcde] shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-              <div className="flex items-center justify-between px-6 py-4 border-b border-[#dcdcde] bg-[#f6f7f7]">
-                <h3 className="font-semibold text-[#2c3338] text-base flex items-center gap-2">
-                  <Bed className="w-5 h-5 text-[#006088]" />
+          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                  <Bed className="w-5 h-5 text-sky-600" />
                   Admit to Bed {assignModalBed.bedNumber}
                 </h3>
                 <button
                   onClick={() => setAssignModalBed(null)}
-                  className="text-gray-400 hover:text-gray-600 p-1 rounded-sm cursor-pointer"
+                  className="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               <form onSubmit={handleAssign} className="p-6 space-y-4">
-                <div className="bg-[#e6f4f8] p-3 rounded-sm text-xs text-[#006088] space-y-1">
+                <div className="bg-sky-50 p-3.5 rounded-xl text-xs text-sky-900 border border-sky-100 space-y-1">
                   <p>
                     <strong>Ward:</strong> {assignModalBed.wardType} (Floor {assignModalBed.floor})
                   </p>
@@ -358,14 +379,14 @@ const ReceptionistBeds = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[#2c3338] uppercase mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
                     Select Patient to Admit *
                   </label>
                   <select
                     required
                     value={selectedPatientId}
                     onChange={(e) => setSelectedPatientId(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-[#dcdcde] rounded-sm focus:outline-hidden focus:border-[#0087be] bg-white text-[#2c3338]"
+                    className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-hidden focus:border-sky-500 bg-white text-slate-900"
                   >
                     <option value="">-- Choose Registered Patient --</option>
                     {patients.map((p) => (
@@ -376,17 +397,17 @@ const ReceptionistBeds = () => {
                   </select>
                 </div>
 
-                <div className="pt-4 border-t border-[#dcdcde] flex justify-end gap-3">
+                <div className="pt-4 border-t border-slate-100 flex justify-end gap-2.5">
                   <button
                     type="button"
                     onClick={() => setAssignModalBed(null)}
-                    className="px-4 py-2 border border-[#dcdcde] text-sm text-[#50575e] hover:bg-[#f6f7f7] rounded-sm font-medium cursor-pointer"
+                    className="px-4 py-2 border border-slate-200 text-xs text-slate-600 hover:bg-slate-50 rounded-xl font-semibold cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-[#0087be] hover:bg-[#006088] text-white text-sm font-medium rounded-sm shadow-xs transition-colors cursor-pointer"
+                    className="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold rounded-xl shadow-xs shadow-sky-600/20 transition-all cursor-pointer"
                   >
                     Confirm Admission
                   </button>
@@ -398,37 +419,37 @@ const ReceptionistBeds = () => {
 
         {/* Modal: Transfer Bed */}
         {transferModalBed && (
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-md border border-[#dcdcde] shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-              <div className="flex items-center justify-between px-6 py-4 border-b border-[#dcdcde] bg-[#f6f7f7]">
-                <h3 className="font-semibold text-[#2c3338] text-base flex items-center gap-2">
-                  <ArrowRightLeft className="w-5 h-5 text-[#006088]" />
-                  Transfer Bed {transferModalBed.bedNumber}
+          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                  <ArrowRightLeft className="w-5 h-5 text-sky-600" />
+                  Transfer Patient from Bed {transferModalBed.bedNumber}
                 </h3>
                 <button
                   onClick={() => setTransferModalBed(null)}
-                  className="text-gray-400 hover:text-gray-600 p-1 rounded-sm cursor-pointer"
+                  className="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               <form onSubmit={handleTransfer} className="p-6 space-y-4">
-                <p className="text-sm text-[#50575e]">
+                <p className="text-xs text-slate-600">
                   Transferring patient{' '}
-                  <strong className="text-[#2c3338]">{transferModalBed.currentPatient?.name}</strong> from{' '}
+                  <strong className="text-slate-900">{transferModalBed.currentPatient?.name}</strong> from{' '}
                   <strong>Bed {transferModalBed.bedNumber}</strong>.
                 </p>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[#2c3338] uppercase mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
                     Select Target Available Bed *
                   </label>
                   <select
                     required
                     value={targetBedId}
                     onChange={(e) => setTargetBedId(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-[#dcdcde] rounded-sm focus:outline-hidden focus:border-[#0087be] bg-white text-[#2c3338]"
+                    className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-hidden focus:border-sky-500 bg-white text-slate-900"
                   >
                     <option value="">-- Choose Destination Bed --</option>
                     {availableBeds.map((b) => (
@@ -439,17 +460,17 @@ const ReceptionistBeds = () => {
                   </select>
                 </div>
 
-                <div className="pt-4 border-t border-[#dcdcde] flex justify-end gap-3">
+                <div className="pt-4 border-t border-slate-100 flex justify-end gap-2.5">
                   <button
                     type="button"
                     onClick={() => setTransferModalBed(null)}
-                    className="px-4 py-2 border border-[#dcdcde] text-sm text-[#50575e] hover:bg-[#f6f7f7] rounded-sm font-medium cursor-pointer"
+                    className="px-4 py-2 border border-slate-200 text-xs text-slate-600 hover:bg-slate-50 rounded-xl font-semibold cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-[#0087be] hover:bg-[#006088] text-white text-sm font-medium rounded-sm shadow-xs transition-colors cursor-pointer"
+                    className="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold rounded-xl shadow-xs shadow-sky-600/20 transition-all cursor-pointer"
                   >
                     Execute Transfer
                   </button>

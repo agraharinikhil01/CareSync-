@@ -1,7 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
 import DashboardLayout from '../../layouts/DashboardLayout';
-import { Stethoscope, Plus, Search, Filter, Trash2, Edit, Award, Clock, DollarSign, X } from 'lucide-react';
+import {
+  Stethoscope,
+  Plus,
+  Search,
+  Filter,
+  Trash2,
+  Edit,
+  Award,
+  Clock,
+  DollarSign,
+  X,
+  Phone,
+  Mail,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const SPECIALIZATIONS = [
@@ -113,7 +126,9 @@ const DoctorsPage = () => {
         availability: !doc.availability,
       });
       if (res.data.success) {
-        toast.success(`Dr. ${doc.user?.name || ''} marked ${!doc.availability ? 'Available' : 'Unavailable'}`);
+        toast.success(
+          `Dr. ${doc.user?.name || ''} marked ${!doc.availability ? 'Available' : 'Unavailable'}`
+        );
         fetchDoctors();
       }
     } catch {
@@ -150,18 +165,19 @@ const DoctorsPage = () => {
   };
 
   return (
-    <DashboardLayout>
+    <DashboardLayout title="Doctor Specialists & Faculty">
       <div className="space-y-6">
-        {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#dcdcde] pb-4 bg-white p-6 rounded-md shadow-xs">
+        {/* Header Hero */}
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="p-2 bg-[#e6f4f8] text-[#006088] rounded-md">
-                <Stethoscope className="w-6 h-6" />
-              </span>
-              <h1 className="text-2xl font-semibold text-[#2c3338] tracking-tight">Doctor Roster & Faculty</h1>
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-teal-50 border border-teal-200/60 text-xs text-teal-800 font-semibold mb-2">
+              <Stethoscope className="w-3.5 h-3.5 text-teal-600" />
+              <span>Medical Faculty Roster</span>
             </div>
-            <p className="text-sm text-[#50575e] mt-1">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+              Doctor Roster & Faculty
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
               Manage attending physicians, departmental specializations, consultation fees, and real-time on-call availability.
             </p>
           </div>
@@ -180,41 +196,41 @@ const DoctorsPage = () => {
               });
               setShowModal(true);
             }}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-[#0087be] hover:bg-[#006088] text-white text-sm font-medium rounded-sm shadow-xs transition-colors cursor-pointer"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold rounded-xl shadow-xs shadow-sky-600/20 transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            Add Doctor
+            <span>Add Doctor</span>
           </button>
         </div>
 
         {/* Filters and Search */}
-        <div className="bg-white p-4 rounded-md border border-[#dcdcde] shadow-xs flex flex-col md:flex-row gap-4 justify-between items-center">
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row gap-4 justify-between items-center">
           <form onSubmit={handleSearch} className="flex gap-2 w-full md:w-96">
             <div className="relative flex-1">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search physician by name or email..."
-                className="w-full pl-9 pr-3 py-2 text-sm border border-[#dcdcde] rounded-sm focus:outline-hidden focus:border-[#0087be] focus:ring-1 focus:ring-[#0087be]"
+                placeholder="Search doctor by name or email..."
+                className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:border-sky-500 focus:ring-3 focus:ring-sky-500/15 text-slate-900"
               />
             </div>
             <button
               type="submit"
-              className="px-3 py-2 bg-[#f6f7f7] hover:bg-[#eaeaea] text-[#2c3338] border border-[#dcdcde] rounded-sm text-sm font-medium transition-colors cursor-pointer"
+              className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition-colors cursor-pointer"
             >
               Search
             </button>
           </form>
 
-          <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto">
-            <Filter className="w-4 h-4 text-gray-500 shrink-0" />
-            <span className="text-xs font-semibold text-[#50575e] uppercase">Dept:</span>
+          <div className="flex items-center gap-2.5 w-full md:w-auto">
+            <Filter className="w-4 h-4 text-slate-400" />
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Dept:</span>
             <select
               value={specFilter}
               onChange={(e) => setSpecFilter(e.target.value)}
-              className="px-3 py-2 text-sm border border-[#dcdcde] rounded-sm focus:outline-hidden focus:border-[#0087be] bg-white text-[#2c3338]"
+              className="px-3 py-2 text-xs font-semibold border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-hidden focus:border-sky-500"
             >
               {SPECIALIZATIONS.map((spec) => (
                 <option key={spec} value={spec}>
@@ -225,93 +241,90 @@ const DoctorsPage = () => {
           </div>
         </div>
 
-        {/* Doctor Grid / Cards */}
+        {/* Doctor Grid */}
         {loading ? (
-          <div className="bg-white p-12 text-center rounded-md border border-[#dcdcde]">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-[#0087be] border-t-transparent"></div>
-            <p className="mt-3 text-sm text-[#50575e]">Loading medical faculty records...</p>
+          <div className="p-16 text-center bg-white rounded-2xl border border-slate-200">
+            <div className="w-8 h-8 border-3 border-sky-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+            <p className="text-xs text-slate-500">Loading medical faculty records...</p>
           </div>
         ) : doctors.length === 0 ? (
-          <div className="bg-white p-12 text-center rounded-md border border-[#dcdcde]">
-            <Stethoscope className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-base font-medium text-[#2c3338]">No doctors found</p>
-            <p className="text-sm text-[#50575e] mt-1">Try adjusting search criteria or register a new doctor.</p>
+          <div className="p-16 text-center bg-white rounded-2xl border border-slate-200">
+            <Stethoscope className="w-12 h-12 text-slate-300 mx-auto mb-2" />
+            <p className="text-sm font-semibold text-slate-700">No physicians found</p>
+            <p className="text-xs text-slate-400 mt-1">Try selecting another department or add a new doctor.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {doctors.map((doc) => (
               <div
                 key={doc._id}
-                className="bg-white rounded-md border border-[#dcdcde] shadow-xs hover:shadow-md transition-shadow p-5 flex flex-col justify-between"
+                className="bg-white rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow p-5 flex flex-col justify-between"
               >
                 <div>
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-[#006088] text-white flex items-center justify-center font-bold text-lg">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-sky-600 to-teal-500 text-white flex items-center justify-center font-bold text-lg shadow-md shadow-sky-500/20">
                         {doc.user?.name ? doc.user.name.charAt(0).toUpperCase() : 'D'}
                       </div>
                       <div>
-                        <h3 className="font-semibold text-[#2c3338] text-base leading-tight">
-                          Dr. {doc.user?.name || 'Unnamed Doctor'}
+                        <h3 className="font-bold text-slate-900 text-base leading-tight">
+                          Dr. {doc.user?.name || 'Doctor'}
                         </h3>
-                        <p className="text-xs text-[#0087be] font-medium mt-0.5">{doc.specialization}</p>
+                        <p className="text-xs text-sky-600 font-semibold mt-0.5">{doc.specialization}</p>
                       </div>
                     </div>
                     <button
                       onClick={() => handleToggleAvailability(doc)}
                       title="Click to toggle availability"
-                      className={`text-xs px-2.5 py-1 rounded-full font-medium transition-colors cursor-pointer ${
-                        doc.availability ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-gray-100 text-gray-600 border border-gray-200'
+                      className={`text-[10px] px-2.5 py-1 rounded-full font-bold transition-colors cursor-pointer ${
+                        doc.availability
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                          : 'bg-slate-100 text-slate-600 border border-slate-200'
                       }`}
                     >
                       {doc.availability ? '● Available' : '○ Off-Duty'}
                     </button>
                   </div>
 
-                  <div className="mt-4 pt-4 border-t border-[#f0f0f1] space-y-2 text-xs text-[#50575e]">
+                  <div className="mt-4 pt-3 border-t border-slate-100 space-y-2 text-xs text-slate-600">
                     <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5">
-                        <Award className="w-3.5 h-3.5 text-gray-400" />
-                        Qualification:
+                      <span className="flex items-center gap-1.5 text-slate-400">
+                        <Award className="w-3.5 h-3.5" /> Qualification:
                       </span>
-                      <span className="font-medium text-[#2c3338]">{doc.qualification || 'MBBS'}</span>
+                      <span className="font-semibold text-slate-800">{doc.qualification || 'MBBS'}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5 text-gray-400" />
-                        Experience:
+                      <span className="flex items-center gap-1.5 text-slate-400">
+                        <Clock className="w-3.5 h-3.5" /> Experience:
                       </span>
-                      <span className="font-medium text-[#2c3338]">{doc.experience} Years</span>
+                      <span className="font-semibold text-slate-800">{doc.experience} Years</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5">
-                        <DollarSign className="w-3.5 h-3.5 text-gray-400" />
-                        Consultation Fee:
+                      <span className="flex items-center gap-1.5 text-slate-400">
+                        <DollarSign className="w-3.5 h-3.5" /> Consultation Fee:
                       </span>
-                      <span className="font-medium text-emerald-700">₹{doc.consultationFee}</span>
+                      <span className="font-bold text-emerald-700">₹{doc.consultationFee}</span>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span>Email:</span>
-                      <span className="font-mono text-[11px] text-[#2c3338] truncate max-w-[180px]">{doc.user?.email}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>Contact Phone:</span>
-                      <span className="font-medium text-[#2c3338]">{doc.user?.phone || 'Not configured'}</span>
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="text-slate-400">Email:</span>
+                      <span className="font-mono text-[11px] text-slate-700 truncate max-w-[180px]">
+                        {doc.user?.email}
+                      </span>
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-5 pt-3 border-t border-[#dcdcde] flex items-center justify-end gap-2">
+                <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-end gap-1.5">
                   <button
                     onClick={() => openEdit(doc)}
-                    className="p-1.5 text-gray-600 hover:text-[#0087be] hover:bg-[#f6f7f7] rounded-sm transition-colors cursor-pointer"
+                    className="p-1.5 text-slate-500 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition-colors cursor-pointer"
                     title="Edit Doctor Details"
                   >
                     <Edit className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => handleDelete(doc._id)}
-                    className="p-1.5 text-gray-600 hover:text-rose-600 hover:bg-rose-50 rounded-sm transition-colors cursor-pointer"
+                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
                     title="Remove Doctor"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -322,18 +335,18 @@ const DoctorsPage = () => {
           </div>
         )}
 
-        {/* Add / Edit Doctor Modal */}
+        {/* Modal: Add / Edit Doctor */}
         {showModal && (
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-md border border-[#dcdcde] shadow-xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-              <div className="flex items-center justify-between px-6 py-4 border-b border-[#dcdcde] bg-[#f6f7f7]">
-                <h3 className="font-semibold text-[#2c3338] text-base flex items-center gap-2">
-                  <Stethoscope className="w-5 h-5 text-[#006088]" />
+          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                  <Stethoscope className="w-5 h-5 text-sky-600" />
                   {editingDoctor ? `Edit Dr. ${editingDoctor.user?.name}` : 'Register New Doctor'}
                 </h3>
                 <button
                   onClick={() => setShowModal(false)}
-                  className="text-gray-400 hover:text-gray-600 p-1 rounded-sm cursor-pointer"
+                  className="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -342,7 +355,7 @@ const DoctorsPage = () => {
               <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold text-[#2c3338] uppercase mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
                       Full Name *
                     </label>
                     <input
@@ -351,12 +364,12 @@ const DoctorsPage = () => {
                       placeholder="e.g. Ramesh Kumar"
                       value={form.name}
                       onChange={(e) => setForm({ ...form, name: e.target.value })}
-                      className="w-full px-3 py-2 text-sm border border-[#dcdcde] rounded-sm focus:outline-hidden focus:border-[#0087be] focus:ring-1 focus:ring-[#0087be]"
+                      className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-hidden focus:border-sky-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-[#2c3338] uppercase mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
                       Phone Number *
                     </label>
                     <input
@@ -365,7 +378,7 @@ const DoctorsPage = () => {
                       placeholder="+91 9876543210"
                       value={form.phone}
                       onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                      className="w-full px-3 py-2 text-sm border border-[#dcdcde] rounded-sm focus:outline-hidden focus:border-[#0087be] focus:ring-1 focus:ring-[#0087be]"
+                      className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-hidden focus:border-sky-500"
                     />
                   </div>
                 </div>
@@ -373,7 +386,7 @@ const DoctorsPage = () => {
                 {!editingDoctor && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-semibold text-[#2c3338] uppercase mb-1">
+                      <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
                         Email Address *
                       </label>
                       <input
@@ -382,12 +395,12 @@ const DoctorsPage = () => {
                         placeholder="doctor@caresync.com"
                         value={form.email}
                         onChange={(e) => setForm({ ...form, email: e.target.value })}
-                        className="w-full px-3 py-2 text-sm border border-[#dcdcde] rounded-sm focus:outline-hidden focus:border-[#0087be] focus:ring-1 focus:ring-[#0087be]"
+                        className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-hidden focus:border-sky-500"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-[#2c3338] uppercase mb-1">
+                      <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
                         Initial Password
                       </label>
                       <input
@@ -395,7 +408,7 @@ const DoctorsPage = () => {
                         placeholder="Doctor@123"
                         value={form.password}
                         onChange={(e) => setForm({ ...form, password: e.target.value })}
-                        className="w-full px-3 py-2 text-sm border border-[#dcdcde] rounded-sm focus:outline-hidden focus:border-[#0087be] focus:ring-1 focus:ring-[#0087be]"
+                        className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-hidden focus:border-sky-500"
                       />
                     </div>
                   </div>
@@ -403,13 +416,13 @@ const DoctorsPage = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold text-[#2c3338] uppercase mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
                       Specialization *
                     </label>
                     <select
                       value={form.specialization}
                       onChange={(e) => setForm({ ...form, specialization: e.target.value })}
-                      className="w-full px-3 py-2 text-sm border border-[#dcdcde] rounded-sm focus:outline-hidden focus:border-[#0087be] bg-white text-[#2c3338]"
+                      className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-hidden focus:border-sky-500 bg-white text-slate-900"
                     >
                       {SPECIALIZATIONS.filter((s) => s !== 'All').map((s) => (
                         <option key={s} value={s}>
@@ -420,7 +433,7 @@ const DoctorsPage = () => {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-[#2c3338] uppercase mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
                       Qualification *
                     </label>
                     <input
@@ -429,14 +442,14 @@ const DoctorsPage = () => {
                       placeholder="MBBS, MD, DM"
                       value={form.qualification}
                       onChange={(e) => setForm({ ...form, qualification: e.target.value })}
-                      className="w-full px-3 py-2 text-sm border border-[#dcdcde] rounded-sm focus:outline-hidden focus:border-[#0087be] focus:ring-1 focus:ring-[#0087be]"
+                      className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-hidden focus:border-sky-500"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold text-[#2c3338] uppercase mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
                       Experience (Years)
                     </label>
                     <input
@@ -444,12 +457,12 @@ const DoctorsPage = () => {
                       min="0"
                       value={form.experience}
                       onChange={(e) => setForm({ ...form, experience: e.target.value })}
-                      className="w-full px-3 py-2 text-sm border border-[#dcdcde] rounded-sm focus:outline-hidden focus:border-[#0087be] focus:ring-1 focus:ring-[#0087be]"
+                      className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-hidden focus:border-sky-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-[#2c3338] uppercase mb-1">
+                    <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
                       Consultation Fee (₹)
                     </label>
                     <input
@@ -458,22 +471,22 @@ const DoctorsPage = () => {
                       step="50"
                       value={form.consultationFee}
                       onChange={(e) => setForm({ ...form, consultationFee: e.target.value })}
-                      className="w-full px-3 py-2 text-sm border border-[#dcdcde] rounded-sm focus:outline-hidden focus:border-[#0087be] focus:ring-1 focus:ring-[#0087be]"
+                      className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-hidden focus:border-sky-500"
                     />
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-[#dcdcde] flex justify-end gap-3">
+                <div className="pt-4 border-t border-slate-100 flex justify-end gap-2.5">
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}
-                    className="px-4 py-2 border border-[#dcdcde] text-sm text-[#50575e] hover:bg-[#f6f7f7] rounded-sm font-medium cursor-pointer"
+                    className="px-4 py-2 border border-slate-200 text-xs text-slate-600 hover:bg-slate-50 rounded-xl font-semibold cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-[#0087be] hover:bg-[#006088] text-white text-sm font-medium rounded-sm shadow-xs transition-colors cursor-pointer"
+                    className="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold rounded-xl shadow-xs shadow-sky-600/20 transition-all cursor-pointer"
                   >
                     {editingDoctor ? 'Save Changes' : 'Register Doctor'}
                   </button>

@@ -1,15 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
 import DashboardLayout from '../../layouts/DashboardLayout';
-import { Bed, CheckCircle, AlertTriangle, XCircle, RefreshCw, Wrench, Shield, User, Filter } from 'lucide-react';
+import {
+  Bed,
+  CheckCircle,
+  AlertTriangle,
+  XCircle,
+  RefreshCw,
+  Wrench,
+  Shield,
+  User,
+  Filter,
+  Layers,
+  Sparkles,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const FLOORS = [
-  { floor: 0, label: 'All Floors' },
-  { floor: 1, label: 'Floor 1 · General Ward' },
-  { floor: 2, label: 'Floor 2 · Semi-Private' },
-  { floor: 3, label: 'Floor 3 · Intensive Care Unit (ICU)' },
-  { floor: 4, label: 'Floor 4 · Deluxe Suites' },
+  { floor: 0, label: 'All 4 Floors', subtitle: 'Hospital-wide ward view' },
+  { floor: 1, label: 'Floor 1', subtitle: 'General Medicine Ward' },
+  { floor: 2, label: 'Floor 2', subtitle: 'Semi-Private Rooms' },
+  { floor: 3, label: 'Floor 3', subtitle: 'Intensive Care Unit (ICU)' },
+  { floor: 4, label: 'Floor 4', subtitle: 'Deluxe Executive Suites' },
 ];
 
 const BedsPage = () => {
@@ -67,19 +79,20 @@ const BedsPage = () => {
   };
 
   return (
-    <DashboardLayout>
+    <DashboardLayout title="4-Floor Inpatient Bed Matrix">
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#dcdcde] pb-4 bg-white p-6 rounded-md shadow-xs">
+        {/* Header Hero */}
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="p-2 bg-[#e6f4f8] text-[#006088] rounded-md">
-                <Bed className="w-6 h-6" />
-              </span>
-              <h1 className="text-2xl font-semibold text-[#2c3338] tracking-tight">4-Floor Inpatient Bed Matrix</h1>
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-sky-50 border border-sky-200/60 text-xs text-sky-800 font-semibold mb-2">
+              <Layers className="w-3.5 h-3.5 text-sky-600" />
+              <span>Ward Infrastructure Telemetry</span>
             </div>
-            <p className="text-sm text-[#50575e] mt-1">
-              Live ward monitoring, real-time sanitization/maintenance status, and bed allocation registry across all 4 hospital floors.
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+              4-Floor Bed Matrix & Inpatient Ward Map
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+              Live ward monitoring, real-time sanitization/maintenance status, and bed allocation registry across all hospital floors.
             </p>
           </div>
           <button
@@ -87,42 +100,42 @@ const BedsPage = () => {
               fetchBeds();
               fetchStats();
             }}
-            className="inline-flex items-center gap-2 px-3.5 py-2 bg-[#f6f7f7] hover:bg-[#eaeaea] text-[#2c3338] border border-[#dcdcde] text-sm font-medium rounded-sm shadow-xs transition-colors cursor-pointer"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-semibold rounded-xl shadow-2xs transition-colors cursor-pointer"
           >
-            <RefreshCw className="w-4 h-4 text-gray-500" />
-            Refresh Status
+            <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
+            <span>Refresh Ward State</span>
           </button>
         </div>
 
         {/* Stats KPI Cards */}
         {stats && (
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-            <div className="bg-white p-4 rounded-md border border-[#dcdcde] shadow-xs">
-              <p className="text-xs font-semibold text-[#50575e] uppercase">Total Capacity</p>
-              <h3 className="text-2xl font-bold text-[#2c3338] mt-1">{stats.total}</h3>
-              <span className="text-xs text-gray-400">All 4 Floors</span>
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5">
+            <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs">
+              <p className="text-xs font-semibold text-slate-500 uppercase">Total Capacity</p>
+              <h3 className="text-2xl font-extrabold text-slate-900 mt-1">{stats.total}</h3>
+              <span className="text-[11px] text-slate-400">All 4 Floors</span>
             </div>
-            <div className="bg-white p-4 rounded-md border border-emerald-200 shadow-xs bg-emerald-50/20">
-              <p className="text-xs font-semibold text-emerald-800 uppercase">Available Beds</p>
-              <h3 className="text-2xl font-bold text-emerald-600 mt-1">{stats.available}</h3>
-              <span className="text-xs text-emerald-600">Ready for admission</span>
+            <div className="bg-white p-4 rounded-xl border border-emerald-200/80 bg-emerald-50/20 shadow-2xs">
+              <p className="text-xs font-semibold text-emerald-800 uppercase">Available</p>
+              <h3 className="text-2xl font-extrabold text-emerald-600 mt-1">{stats.available}</h3>
+              <span className="text-[11px] text-emerald-600">Ready for admission</span>
             </div>
-            <div className="bg-white p-4 rounded-md border border-rose-200 shadow-xs bg-rose-50/20">
-              <p className="text-xs font-semibold text-rose-800 uppercase">Occupied Beds</p>
-              <h3 className="text-2xl font-bold text-rose-600 mt-1">{stats.occupied}</h3>
-              <span className="text-xs text-rose-600">In-treatment</span>
+            <div className="bg-white p-4 rounded-xl border border-rose-200/80 bg-rose-50/20 shadow-2xs">
+              <p className="text-xs font-semibold text-rose-800 uppercase">Occupied</p>
+              <h3 className="text-2xl font-extrabold text-rose-600 mt-1">{stats.occupied}</h3>
+              <span className="text-[11px] text-rose-600">In-treatment</span>
             </div>
-            <div className="bg-white p-4 rounded-md border border-amber-200 shadow-xs bg-amber-50/20">
-              <p className="text-xs font-semibold text-amber-800 uppercase">Maintenance</p>
-              <h3 className="text-2xl font-bold text-amber-600 mt-1">{stats.maintenance}</h3>
-              <span className="text-xs text-amber-600">Sanitizing / repair</span>
+            <div className="bg-white p-4 rounded-xl border border-amber-200/80 bg-amber-50/20 shadow-2xs">
+              <p className="text-xs font-semibold text-amber-800 uppercase">Sanitization</p>
+              <h3 className="text-2xl font-extrabold text-amber-600 mt-1">{stats.maintenance}</h3>
+              <span className="text-[11px] text-amber-600">Maintenance / clean</span>
             </div>
-            <div className="bg-white p-4 rounded-md border border-[#dcdcde] shadow-xs">
-              <p className="text-xs font-semibold text-[#50575e] uppercase">Occupancy Rate</p>
-              <h3 className="text-2xl font-bold text-[#006088] mt-1">{stats.occupancyRate}%</h3>
-              <div className="w-full bg-gray-200 h-1.5 rounded-full mt-2 overflow-hidden">
+            <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs">
+              <p className="text-xs font-semibold text-slate-500 uppercase">Occupancy Rate</p>
+              <h3 className="text-2xl font-extrabold text-sky-600 mt-1">{stats.occupancyRate}%</h3>
+              <div className="w-full bg-slate-100 h-1.5 rounded-full mt-2 overflow-hidden">
                 <div
-                  className="bg-[#006088] h-full rounded-full transition-all duration-300"
+                  className="bg-sky-600 h-full rounded-full transition-all duration-300"
                   style={{ width: `${stats.occupancyRate}%` }}
                 ></div>
               </div>
@@ -130,18 +143,18 @@ const BedsPage = () => {
           </div>
         )}
 
-        {/* Floor and Status Filter Tabs */}
-        <div className="bg-white p-4 rounded-md border border-[#dcdcde] shadow-xs flex flex-col md:flex-row gap-4 justify-between items-center">
-          {/* Floor selection */}
-          <div className="flex items-center gap-1 border-b md:border-b-0 border-[#dcdcde] pb-2 md:pb-0 overflow-x-auto w-full md:w-auto">
+        {/* Floor and Status Filter Ribbon */}
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row gap-4 justify-between items-center">
+          {/* Floor selection tabs */}
+          <div className="flex items-center gap-1.5 border-b md:border-b-0 border-slate-100 pb-2 md:pb-0 overflow-x-auto w-full md:w-auto">
             {FLOORS.map((f) => (
               <button
                 key={f.floor}
                 onClick={() => setSelectedFloor(f.floor)}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-sm transition-colors cursor-pointer whitespace-nowrap ${
+                className={`px-3.5 py-2 text-xs font-semibold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
                   selectedFloor === f.floor
-                    ? 'bg-[#006088] text-white'
-                    : 'text-[#50575e] hover:bg-[#f6f7f7] hover:text-[#2c3338]'
+                    ? 'bg-sky-600 text-white shadow-xs shadow-sky-600/20'
+                    : 'text-slate-600 hover:bg-slate-100'
                 }`}
               >
                 {f.label}
@@ -149,55 +162,59 @@ const BedsPage = () => {
             ))}
           </div>
 
-          {/* Status filter */}
+          {/* Status filter dropdown */}
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-[#50575e] uppercase">Status:</span>
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Status:</span>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-1.5 text-xs border border-[#dcdcde] rounded-sm bg-white text-[#2c3338] focus:outline-hidden focus:border-[#0087be]"
+              className="px-3 py-1.5 text-xs font-semibold border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-hidden focus:border-sky-500"
             >
               <option value="ALL">All Statuses</option>
-              <option value="AVAILABLE">Available</option>
-              <option value="OCCUPIED">Occupied</option>
-              <option value="MAINTENANCE">Maintenance</option>
+              <option value="AVAILABLE">Available Only</option>
+              <option value="OCCUPIED">Occupied Only</option>
+              <option value="MAINTENANCE">Maintenance Only</option>
             </select>
           </div>
         </div>
 
-        {/* 4-Floor Bed Grid */}
+        {/* 4-Floor Bed Interactive Grid */}
         {loading ? (
-          <div className="bg-white p-12 text-center rounded-md border border-[#dcdcde]">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-[#0087be] border-t-transparent"></div>
-            <p className="mt-3 text-sm text-[#50575e]">Updating ward state...</p>
+          <div className="p-16 text-center bg-white rounded-2xl border border-slate-200">
+            <div className="w-8 h-8 border-3 border-sky-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+            <p className="text-xs text-slate-500">Scanning ward floors...</p>
           </div>
         ) : beds.length === 0 ? (
-          <div className="bg-white p-12 text-center rounded-md border border-[#dcdcde]">
-            <Bed className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-base font-medium text-[#2c3338]">No beds match the current filter</p>
+          <div className="p-16 text-center bg-white rounded-2xl border border-slate-200">
+            <Bed className="w-12 h-12 text-slate-300 mx-auto mb-2" />
+            <p className="text-sm font-semibold text-slate-700">No beds located for this criteria</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {beds.map((b) => (
               <div
                 key={b._id}
-                className={`bg-white rounded-md border p-4 shadow-xs flex flex-col justify-between transition-all ${
+                className={`bg-white rounded-2xl border p-4 shadow-xs flex flex-col justify-between transition-all hover:shadow-md ${
                   b.status === 'AVAILABLE'
-                    ? 'border-emerald-200 hover:border-emerald-400'
+                    ? 'border-emerald-200/90'
                     : b.status === 'OCCUPIED'
-                    ? 'border-rose-200 hover:border-rose-400'
-                    : 'border-amber-200 hover:border-amber-400'
+                    ? 'border-rose-200/90'
+                    : 'border-amber-200/90'
                 }`}
               >
                 <div>
                   <div className="flex items-start justify-between">
                     <div>
-                      <span className="text-xs font-bold text-gray-400">FL {b.floor}</span>
-                      <h4 className="font-bold text-base text-[#2c3338]">{b.bedNumber}</h4>
-                      <p className="text-xs text-[#006088] font-medium">{b.wardType}</p>
+                      <span className="text-[10px] font-bold text-slate-400 font-mono">
+                        FLOOR {b.floor}
+                      </span>
+                      <h4 className="font-extrabold text-xl text-slate-900 leading-tight">
+                        {b.bedNumber}
+                      </h4>
+                      <p className="text-xs text-sky-700 font-medium mt-0.5">{b.wardType}</p>
                     </div>
                     <span
-                      className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${
+                      className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold ${
                         b.status === 'AVAILABLE'
                           ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                           : b.status === 'OCCUPIED'
@@ -205,51 +222,52 @@ const BedsPage = () => {
                           : 'bg-amber-50 text-amber-700 border border-amber-200'
                       }`}
                     >
-                      {b.status}
+                      ● {b.status}
                     </span>
                   </div>
 
-                  <div className="mt-3 pt-3 border-t border-gray-100 text-xs space-y-1.5">
-                    <div className="flex justify-between text-gray-500">
-                      <span>Rate / Day:</span>
-                      <span className="font-semibold text-[#2c3338]">₹{b.dailyRate}</span>
+                  <div className="mt-4 pt-3 border-t border-slate-100 text-xs space-y-1.5">
+                    <div className="flex justify-between text-slate-500">
+                      <span>Daily Tariff:</span>
+                      <span className="font-bold text-slate-900">₹{b.dailyRate} / day</span>
                     </div>
 
                     {b.status === 'OCCUPIED' && b.currentPatient ? (
-                      <div className="mt-2 p-2 bg-rose-50/50 rounded-sm border border-rose-100">
-                        <p className="text-[11px] font-semibold text-rose-900 flex items-center gap-1">
-                          <User className="w-3 h-3 text-rose-600" />
+                      <div className="mt-2 p-2.5 bg-rose-50/70 rounded-xl border border-rose-100">
+                        <p className="text-xs font-bold text-rose-900 flex items-center gap-1.5">
+                          <User className="w-3.5 h-3.5 text-rose-600" />
                           {b.currentPatient.name}
                         </p>
-                        <p className="text-[10px] text-gray-500 mt-0.5">
+                        <p className="text-[10px] text-slate-500 mt-1">
                           Admitted: {new Date(b.admissionDate).toLocaleDateString()}
                         </p>
                       </div>
+                    ) : b.status === 'MAINTENANCE' ? (
+                      <p className="text-xs text-amber-700 italic pt-1 flex items-center gap-1">
+                        <Wrench className="w-3 h-3" /> Under sanitization
+                      </p>
                     ) : (
-                      <p className="text-[11px] text-gray-400 italic pt-1">No patient admitted</p>
+                      <p className="text-xs text-emerald-600 font-medium pt-1">
+                        ✓ Ready for immediate triage
+                      </p>
                     )}
                   </div>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between">
+                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
                   <button
                     onClick={() => handleToggleMaintenance(b._id)}
                     disabled={b.status === 'OCCUPIED'}
-                    className={`text-xs px-2.5 py-1 rounded-sm font-medium flex items-center gap-1 transition-colors cursor-pointer ${
+                    className={`w-full text-xs py-1.5 rounded-xl font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
                       b.status === 'OCCUPIED'
-                        ? 'text-gray-300 cursor-not-allowed'
+                        ? 'text-slate-300 bg-slate-50 cursor-not-allowed'
                         : b.status === 'MAINTENANCE'
                         ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                     }`}
-                    title={
-                      b.status === 'OCCUPIED'
-                        ? 'Cannot service an occupied bed'
-                        : 'Toggle sanitation/maintenance mode'
-                    }
                   >
-                    <Wrench className="w-3 h-3" />
-                    {b.status === 'MAINTENANCE' ? 'Finish Service' : 'Service Bed'}
+                    <Wrench className="w-3.5 h-3.5" />
+                    <span>{b.status === 'MAINTENANCE' ? 'Finish Service & Ready' : 'Service Bed'}</span>
                   </button>
                 </div>
               </div>

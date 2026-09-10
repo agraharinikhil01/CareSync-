@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
 import DashboardLayout from '../../layouts/DashboardLayout';
-import { Users, Plus, Search, Filter, Edit, Trash2, QrCode, X, Check } from 'lucide-react';
+import { Users, Plus, Search, Filter, Trash2, QrCode, X, Phone, Mail, Calendar, UserPlus } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const PatientsPage = () => {
@@ -57,7 +57,16 @@ const PatientsPage = () => {
       if (res.data.success) {
         toast.success('Patient registered successfully');
         setShowAddModal(false);
-        setForm({ name: '', email: '', phone: '', gender: 'Male', bloodGroup: 'O+', address: '', dob: '', password: 'Patient@123' });
+        setForm({
+          name: '',
+          email: '',
+          phone: '',
+          gender: 'Male',
+          bloodGroup: 'O+',
+          address: '',
+          dob: '',
+          password: 'Patient@123',
+        });
         fetchPatients();
       }
     } catch (err) {
@@ -68,60 +77,70 @@ const PatientsPage = () => {
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this patient and their clinical record?')) return;
     try {
-      await api.delete(`/patients/${id}`);
-      toast.success('Patient record deleted');
-      fetchPatients();
-    } catch {
-      toast.error('Deletion failed');
+      const res = await api.delete(`/patients/${id}`);
+      if (res.data.success) {
+        toast.success('Patient record deleted');
+        fetchPatients();
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to delete patient');
     }
   };
 
   return (
-    <DashboardLayout title="Patient Management">
-      <div className="space-y-5">
-        
-        {/* Top Control Bar */}
-        <div className="bg-white border border-[#dcdcde] rounded-md p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <DashboardLayout title="Patient Directory">
+      <div className="space-y-6">
+        {/* Header Hero */}
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h2 className="text-base font-bold text-[#101517]">Patient Records & Demographics</h2>
-            <p className="text-xs text-[#646970]">Browse clinical profiles, electronic health records, and emergency data.</p>
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-sky-50 border border-sky-200/60 text-xs text-sky-800 font-semibold mb-2">
+              <Users className="w-3.5 h-3.5 text-sky-600" />
+              <span>Electronic Medical Records Index</span>
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+              Hospital Patient Directory
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+              Comprehensive patient charts, contact registries, blood groups, and QR identity badges.
+            </p>
           </div>
           <button
             onClick={() => setShowAddModal(true)}
-            className="bg-[#0087be] hover:bg-[#0073aa] text-white text-xs font-semibold px-3.5 py-2 rounded flex items-center gap-1.5 cursor-pointer shadow-sm self-start sm:self-auto"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold rounded-xl shadow-xs shadow-sky-600/20 transition-all cursor-pointer"
           >
-            <Plus className="w-4 h-4" /> Add New Patient
+            <UserPlus className="w-4 h-4" />
+            <span>Register New Patient</span>
           </button>
         </div>
 
-        {/* Filter & Search Bar */}
-        <div className="bg-white border border-[#dcdcde] rounded-md p-3 shadow-xs flex flex-wrap items-center justify-between gap-3">
-          <form onSubmit={handleSearch} className="flex items-center gap-2 flex-1 max-w-md">
+        {/* Search & Filters */}
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row gap-4 justify-between items-center">
+          <form onSubmit={handleSearch} className="flex gap-2 w-full md:w-96">
             <div className="relative flex-1">
-              <Search className="w-3.5 h-3.5 text-[#646970] absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
-                placeholder="Search patient by name, email or phone..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 text-xs border border-[#8c8f94] focus:border-[#006088] rounded outline-none"
+                placeholder="Search patient by name, email or ID..."
+                className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:border-sky-500 focus:ring-3 focus:ring-sky-500/15 transition-all text-slate-900"
               />
             </div>
             <button
               type="submit"
-              className="bg-[#f0f0f1] hover:bg-[#e0e0e1] text-[#2c3338] border border-[#8c8f94] px-3 py-1.5 text-xs font-medium rounded cursor-pointer"
+              className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition-colors cursor-pointer"
             >
               Search
             </button>
           </form>
 
-          <div className="flex items-center gap-2 text-xs">
-            <Filter className="w-3.5 h-3.5 text-[#646970]" />
-            <span className="text-[#646970]">Gender:</span>
+          <div className="flex items-center gap-2.5 w-full md:w-auto">
+            <Filter className="w-4 h-4 text-slate-400" />
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Gender:</span>
             <select
               value={genderFilter}
               onChange={(e) => setGenderFilter(e.target.value)}
-              className="border border-[#8c8f94] rounded px-2 py-1 text-xs outline-none"
+              className="px-3 py-2 text-xs font-semibold border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-hidden focus:border-sky-500"
             >
               <option value="">All Genders</option>
               <option value="Male">Male</option>
@@ -132,185 +151,262 @@ const PatientsPage = () => {
         </div>
 
         {/* Patients Table */}
-        <div className="bg-white border border-[#dcdcde] rounded-md shadow-xs overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-[#f0f0f1] text-[#50575e] border-b border-[#dcdcde] uppercase tracking-wider font-semibold">
-                <tr>
-                  <th className="px-4 py-3">Patient Name</th>
-                  <th className="px-4 py-3">Contact Email</th>
-                  <th className="px-4 py-3">Phone</th>
-                  <th className="px-4 py-3">Gender / Blood</th>
-                  <th className="px-4 py-3">Registered Date</th>
-                  <th className="px-4 py-3 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#f0f0f1]">
-                {patients.map((p) => (
-                  <tr key={p._id} className="hover:bg-[#f6f7f7] transition-colors">
-                    <td className="px-4 py-3 font-medium text-[#101517]">{p.user?.name || 'Unnamed Patient'}</td>
-                    <td className="px-4 py-3 text-[#50575e]">{p.user?.email}</td>
-                    <td className="px-4 py-3 text-[#50575e]">{p.user?.phone || '—'}</td>
-                    <td className="px-4 py-3 text-[#50575e]">
-                      <span className="bg-[#f0f6fc] text-[#006088] px-2 py-0.5 rounded font-medium border border-[#a0c5e8]">
-                        {p.gender} · {p.bloodGroup || 'O+'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-[#50575e]">
-                      {new Date(p.createdAt).toLocaleDateString('en-IN')}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-2">
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+          {loading ? (
+            <div className="p-16 text-center">
+              <div className="w-8 h-8 border-3 border-sky-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+              <p className="text-xs text-slate-500">Loading patient directory...</p>
+            </div>
+          ) : patients.length === 0 ? (
+            <div className="p-16 text-center">
+              <Users className="w-12 h-12 text-slate-300 mx-auto mb-2" />
+              <p className="text-sm font-semibold text-slate-700">No patients found</p>
+              <p className="text-xs text-slate-400 mt-1">Try adjusting your search criteria or register a patient.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="text-slate-400 font-bold border-b border-slate-100 uppercase tracking-wider bg-slate-50/50">
+                    <th className="py-3 px-4">Patient ID</th>
+                    <th className="py-3 px-4">Full Name</th>
+                    <th className="py-3 px-4">Phone & Email</th>
+                    <th className="py-3 px-4">Blood Group</th>
+                    <th className="py-3 px-4">Registered Date</th>
+                    <th className="py-3 px-4 text-center">QR Card</th>
+                    <th className="py-3 px-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {patients.map((p) => (
+                    <tr key={p._id} className="hover:bg-slate-50/70 transition-colors">
+                      <td className="py-3.5 px-4 font-mono font-bold text-sky-700">
+                        {p.patientId}
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <div className="font-bold text-slate-900 text-sm">{p.user?.name}</div>
+                        <div className="text-[11px] text-slate-500">{p.gender}</div>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <div className="font-medium text-slate-700">{p.user?.phone || 'N/A'}</div>
+                        <div className="text-[11px] text-slate-400 font-mono">{p.user?.email}</div>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span className="font-bold px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200">
+                          {p.bloodGroup}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4 text-slate-500 whitespace-nowrap">
+                        {new Date(p.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="py-3.5 px-4 text-center">
                         <button
-                          onClick={async () => {
-                            const res = await api.get(`/patients/${p._id}`);
-                            if (res.data.success) setShowQRModal(res.data.data);
-                          }}
-                          className="text-xs text-[#006088] hover:underline flex items-center gap-0.5 cursor-pointer"
+                          onClick={() => setShowQRModal(p)}
+                          className="p-1.5 text-slate-500 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition-colors cursor-pointer"
+                          title="View Digital QR ID"
                         >
-                          <QrCode className="w-3.5 h-3.5" /> QR ID
+                          <QrCode className="w-4 h-4 mx-auto" />
                         </button>
-                        <span className="text-[#dcdcde]">|</span>
+                      </td>
+                      <td className="py-3.5 px-4 text-right">
                         <button
                           onClick={() => handleDelete(p._id)}
-                          className="text-xs text-[#d63638] hover:underline cursor-pointer"
+                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                          title="Delete Record"
                         >
-                          Delete
+                          <Trash2 className="w-4 h-4" />
                         </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {patients.length === 0 && !loading && (
-              <div className="py-12 text-center text-[#646970] text-xs">
-                No patient records match the selected query.
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Add Patient Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-md border border-[#dcdcde] shadow-xl w-full max-w-md p-6">
-            <div className="flex justify-between items-center border-b border-[#dcdcde] pb-3 mb-4">
-              <h3 className="font-bold text-sm text-[#101517]">Add New Patient Profile</h3>
-              <button onClick={() => setShowAddModal(false)} className="text-[#646970] hover:text-[#101517]">
-                <X className="w-4 h-4" />
-              </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-            <form onSubmit={handleCreate} className="space-y-3 text-xs">
-              <div>
-                <label className="block font-semibold mb-1">Full Name</label>
-                <input
-                  type="text"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder="e.g. Ramesh Chandra"
-                  className="w-full border border-[#8c8f94] rounded px-3 py-2 outline-none focus:border-[#006088]"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block font-semibold mb-1">Email Address</label>
-                  <input
-                    type="email"
-                    value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    placeholder="ramesh@gmail.com"
-                    className="w-full border border-[#8c8f94] rounded px-3 py-2 outline-none focus:border-[#006088]"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block font-semibold mb-1">Phone Number</label>
-                  <input
-                    type="tel"
-                    value={form.phone}
-                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                    placeholder="9876543210"
-                    className="w-full border border-[#8c8f94] rounded px-3 py-2 outline-none focus:border-[#006088]"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block font-semibold mb-1">Gender</label>
-                  <select
-                    value={form.gender}
-                    onChange={(e) => setForm({ ...form, gender: e.target.value })}
-                    className="w-full border border-[#8c8f94] rounded px-3 py-2 outline-none"
-                  >
-                    <option>Male</option>
-                    <option>Female</option>
-                    <option>Other</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block font-semibold mb-1">Blood Group</label>
-                  <select
-                    value={form.bloodGroup}
-                    onChange={(e) => setForm({ ...form, bloodGroup: e.target.value })}
-                    className="w-full border border-[#8c8f94] rounded px-3 py-2 outline-none"
-                  >
-                    {['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'].map((bg) => (
-                      <option key={bg}>{bg}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="block font-semibold mb-1">Address</label>
-                <input
-                  type="text"
-                  value={form.address}
-                  onChange={(e) => setForm({ ...form, address: e.target.value })}
-                  placeholder="City, State"
-                  className="w-full border border-[#8c8f94] rounded px-3 py-2 outline-none focus:border-[#006088]"
-                />
-              </div>
-              <div className="flex gap-2 pt-2 border-t border-[#dcdcde]">
+          )}
+        </div>
+
+        {/* Modal: Register Patient */}
+        {showAddModal && (
+          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                  <UserPlus className="w-5 h-5 text-sky-600" />
+                  Register New Patient
+                </h3>
                 <button
-                  type="submit"
-                  className="flex-1 bg-[#0087be] hover:bg-[#0073aa] text-white font-semibold py-2 rounded cursor-pointer"
-                >
-                  Save Patient Record
-                </button>
-                <button
-                  type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="bg-white border border-[#8c8f94] hover:bg-[#f0f0f1] text-[#2c3338] py-2 px-3 rounded cursor-pointer"
+                  className="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer"
                 >
-                  Cancel
+                  <X className="w-5 h-5" />
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
 
-      {/* QR Code Modal */}
-      {showQRModal && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-md border border-[#dcdcde] shadow-xl w-full max-w-xs p-6 text-center">
-            <div className="flex justify-between items-center border-b border-[#dcdcde] pb-2 mb-4">
-              <h3 className="font-bold text-xs text-[#101517]">Patient ID QR Code</h3>
-              <button onClick={() => setShowQRModal(null)} className="text-[#646970] hover:text-[#101517]">
-                <X className="w-4 h-4" />
+              <form onSubmit={handleCreate} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                      Full Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Ramesh Kumar"
+                      value={form.name}
+                      onChange={(e) => setForm({ ...form, name: e.target.value })}
+                      className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-hidden focus:border-sky-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                      Phone Number *
+                    </label>
+                    <input
+                      type="tel"
+                      required
+                      placeholder="+91 9876543210"
+                      value={form.phone}
+                      onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                      className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-hidden focus:border-sky-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                      Email Address *
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      placeholder="patient@email.com"
+                      value={form.email}
+                      onChange={(e) => setForm({ ...form, email: e.target.value })}
+                      className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-hidden focus:border-sky-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                      Date of Birth
+                    </label>
+                    <input
+                      type="date"
+                      value={form.dob}
+                      onChange={(e) => setForm({ ...form, dob: e.target.value })}
+                      className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-hidden focus:border-sky-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                      Gender
+                    </label>
+                    <select
+                      value={form.gender}
+                      onChange={(e) => setForm({ ...form, gender: e.target.value })}
+                      className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-hidden focus:border-sky-500 bg-white"
+                    >
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                      Blood Group
+                    </label>
+                    <select
+                      value={form.bloodGroup}
+                      onChange={(e) => setForm({ ...form, bloodGroup: e.target.value })}
+                      className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-hidden focus:border-sky-500 bg-white"
+                    >
+                      {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((bg) => (
+                        <option key={bg} value={bg}>
+                          {bg}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                    Residential Address
+                  </label>
+                  <textarea
+                    rows="2"
+                    value={form.address}
+                    onChange={(e) => setForm({ ...form, address: e.target.value })}
+                    placeholder="Street, City, Postal Code"
+                    className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-hidden focus:border-sky-500"
+                  ></textarea>
+                </div>
+
+                <div className="pt-4 border-t border-slate-100 flex justify-end gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(false)}
+                    className="px-4 py-2 border border-slate-200 text-xs text-slate-600 hover:bg-slate-50 rounded-xl font-semibold cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold rounded-xl shadow-xs shadow-sky-600/20 transition-all cursor-pointer"
+                  >
+                    Register Patient
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Modal: QR Code */}
+        {showQRModal && (
+          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xl w-full max-w-sm p-6 text-center animate-in fade-in zoom-in-95 duration-150">
+              <div className="w-12 h-12 rounded-2xl bg-sky-600 text-white flex items-center justify-center font-bold text-lg mx-auto mb-2 shadow-md shadow-sky-600/20">
+                {showQRModal.user?.name ? showQRModal.user.name.charAt(0).toUpperCase() : 'P'}
+              </div>
+              <h3 className="font-bold text-slate-900 text-base">{showQRModal.user?.name}</h3>
+              <p className="text-xs text-sky-600 font-mono mt-0.5">{showQRModal.patientId}</p>
+
+              <div className="mt-4 p-4 bg-white border border-slate-200 rounded-xl inline-block shadow-xs">
+                {showQRModal.qrCode ? (
+                  <img src={showQRModal.qrCode} alt="Patient QR" className="w-44 h-44 mx-auto" />
+                ) : (
+                  <div className="w-44 h-44 flex items-center justify-center text-xs text-slate-400">
+                    QR Available on verification
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-4 text-xs text-slate-600 space-y-1 text-left bg-slate-50 p-3 rounded-xl">
+                <p>
+                  <strong>Blood Group:</strong> {showQRModal.bloodGroup}
+                </p>
+                <p>
+                  <strong>Contact:</strong> {showQRModal.user?.phone || 'N/A'}
+                </p>
+              </div>
+
+              <button
+                onClick={() => setShowQRModal(null)}
+                className="mt-4 w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl cursor-pointer"
+              >
+                Close Badge
               </button>
             </div>
-            {showQRModal.qrCode && (
-              <img src={showQRModal.qrCode} alt="Patient QR ID" className="w-44 h-44 mx-auto border p-1 rounded" />
-            )}
-            <p className="font-bold text-xs text-[#101517] mt-3">{showQRModal.user?.name}</p>
-            <p className="text-[11px] text-[#646970]">Hospital ID: #{showQRModal._id.slice(-6)}</p>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </DashboardLayout>
   );
 };

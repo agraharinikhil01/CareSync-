@@ -1,4 +1,5 @@
-require('dotenv').config({ path: '../.env' });
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 const mongoose = require('mongoose');
 const User = require('../models/User');
 const DoctorProfile = require('../models/DoctorProfile');
@@ -10,12 +11,15 @@ const connectDB = require('../config/db');
 const seed = async () => {
   await connectDB();
 
-  // Clear existing
-  await User.deleteMany();
-  await DoctorProfile.deleteMany();
-  await PatientProfile.deleteMany();
-  await Bed.deleteMany();
-  console.log('🧹 Cleared existing data');
+  // Drop old collections to ensure old schema indexes (like userId_1) are cleared
+  try { await mongoose.connection.collection('users').drop(); } catch (e) {}
+  try { await mongoose.connection.collection('doctorprofiles').drop(); } catch (e) {}
+  try { await mongoose.connection.collection('patientprofiles').drop(); } catch (e) {}
+  try { await mongoose.connection.collection('beds').drop(); } catch (e) {}
+  try { await mongoose.connection.collection('appointments').drop(); } catch (e) {}
+  try { await mongoose.connection.collection('bills').drop(); } catch (e) {}
+  try { await mongoose.connection.collection('prescriptions').drop(); } catch (e) {}
+  console.log('🧹 Cleared all existing collections & stale indexes');
 
   // Create Admin
   const admin = await User.create({ name: 'Admin User', email: 'admin@caresync.com', password: 'Admin@123', role: 'admin', phone: '9999000001' });

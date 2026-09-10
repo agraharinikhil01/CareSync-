@@ -1,0 +1,28 @@
+{
+  "name": "caresync-backend",
+  "version": "1.0.0",
+  "description": "CareSync Hospital Management System - Backend API",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "seed": "node src/utils/seed.js"
+  },
+  "keywords": ["hms", "hospital", "healthcare", "mern"],
+  "author": "CareSync Systems",
+  "license": "ISC",
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.9.5",
+    "morgan": "^1.12.0",
+    "node-cron": "^4.6.0",
+    "pdfkit": "^0.17.2",
+    "qrcode": "^1.5.4"
+  }
+}

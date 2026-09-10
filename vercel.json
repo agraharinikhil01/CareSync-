@@ -1,6 +1,7 @@
 {
-  "buildCommand": "npm install && cd client && npm install && npm run build",
-  "outputDirectory": "client/dist",
+  "version": 2,
+  "buildCommand": "cd frontend && npm install && npm run build",
+  "outputDirectory": "frontend/dist",
   "headers": [
     {
       "source": "/api/(.*)",

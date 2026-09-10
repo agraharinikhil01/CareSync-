@@ -1,66 +1,18 @@
 const mongoose = require('mongoose');
 
-const availableSlotSchema = new mongoose.Schema({
-  day: {
-    type: String,
-    enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
-    required: true,
+const DoctorProfileSchema = new mongoose.Schema({
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
+  specialization: { type: String, required: true },
+  department: { type: String },
+  qualification: { type: String },
+  experience: { type: Number, default: 0 },
+  consultationFee: { type: Number, default: 500 },
+  isAvailable: { type: Boolean, default: true },
+  schedule: {
+    days: { type: [String], default: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] },
+    startTime: { type: String, default: '09:00' },
+    endTime: { type: String, default: '17:00' },
   },
-  startTime: {
-    type: String,
-    required: true, // e.g., "09:00"
-  },
-  endTime: {
-    type: String,
-    required: true, // e.g., "17:00"
-  },
-});
+}, { timestamps: true });
 
-const doctorProfileSchema = new mongoose.Schema(
-  {
-    userId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true,
-      unique: true,
-    },
-    specialization: {
-      type: String,
-      required: [true, 'Specialization is required'],
-      trim: true,
-    },
-    department: {
-      type: String,
-      required: [true, 'Department is required'],
-      trim: true,
-    },
-    qualifications: {
-      type: [String],
-      default: ['MBBS'],
-    },
-    experienceYears: {
-      type: Number,
-      default: 1,
-      min: [0, 'Experience cannot be negative'],
-    },
-    consultationFee: {
-      type: Number,
-      required: [true, 'Consultation fee is required'],
-      min: [0, 'Fee cannot be negative'],
-    },
-    biography: {
-      type: String,
-      default: '',
-    },
-    roomNumber: {
-      type: String,
-      default: '',
-    },
-    availableSlots: [availableSlotSchema],
-  },
-  {
-    timestamps: true,
-  }
-);
-
-module.exports = mongoose.model('DoctorProfile', doctorProfileSchema);
+module.exports = mongoose.model('DoctorProfile', DoctorProfileSchema);

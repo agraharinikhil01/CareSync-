@@ -1,178 +1,144 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Activity, ShieldCheck, Stethoscope, HeartPulse, UserCheck, Lock, Mail, ArrowRight } from 'lucide-react';
+import { Heart, Eye, EyeOff, LogIn } from 'lucide-react';
+
+const demoRoles = [
+  { label: '👑 Admin',          email: 'admin@caresync.com',         password: 'Admin@123'   },
+  { label: '🩺 Doctor',         email: 'doctor1@caresync.com',       password: 'Doctor@123'  },
+  { label: '🏥 Receptionist',   email: 'receptionist@caresync.com',  password: 'Staff@123'   },
+  { label: '🧑 Patient',        email: 'patient1@caresync.com',      password: 'Patient@123' },
+];
 
 const Login = () => {
-  const [email, setEmail] = useState('admin@hospital.com');
+  const [email, setEmail]       = useState('admin@caresync.com');
   const [password, setPassword] = useState('Admin@123');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [showPass, setShowPass] = useState(false);
+  const [error, setError]       = useState('');
+  const [loading, setLoading]   = useState(false);
 
   const { login } = useAuth();
-  const navigate = useNavigate();
+  const navigate  = useNavigate();
 
-  const handleLogin = async (e) => {
+  const roleRedirects = { admin: '/admin', doctor: '/doctor', receptionist: '/receptionist', patient: '/patient' };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
     const res = await login(email, password);
     setLoading(false);
-
-    if (res.success) {
-      const roleRedirects = {
-        admin: '/admin',
-        doctor: '/doctor',
-        patient: '/patient',
-        receptionist: '/receptionist',
-      };
-      navigate(roleRedirects[res.user.role] || '/');
-    } else {
-      setError(res.message);
-    }
-  };
-
-  // Demo Login Helper
-  const setDemoCredentials = (role) => {
-    switch (role) {
-      case 'admin':
-        setEmail('admin@hospital.com');
-        setPassword('Admin@123');
-        break;
-      case 'doctor':
-        setEmail('doctor.sharma@hospital.com');
-        setPassword('Doctor@123');
-        break;
-      case 'receptionist':
-        setEmail('receptionist@hospital.com');
-        setPassword('Staff@123');
-        break;
-      case 'patient':
-        setEmail('patient.rahul@gmail.com');
-        setPassword('Patient@123');
-        break;
-      default:
-        break;
-    }
+    if (res.success) navigate(roleRedirects[res.user.role] || '/');
+    else setError(res.message);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-sky-950 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-sky-600 shadow-xl shadow-sky-500/30 text-white mb-4">
-          <Activity className="w-10 h-10 stroke-[2.5]" />
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-full mb-4 shadow-lg">
+            <Heart className="w-8 h-8 text-blue-600" fill="currentColor" />
+          </div>
+          <h1 className="text-3xl font-bold text-white">CareSync HMS</h1>
+          <p className="text-blue-200 mt-1">Hospital Management System</p>
         </div>
-        <h2 className="text-3xl font-extrabold text-white tracking-tight">CareSync HMS</h2>
-        <p className="mt-2 text-sm text-slate-400">Production-Grade Hospital Management System</p>
-      </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-6 shadow-2xl rounded-3xl sm:px-10 border border-slate-100">
-          {/* Demo account quick switcher */}
-          <div className="mb-6">
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2.5 text-center">
-              ⚡ Quick Demo Login Fill
-            </p>
+        {/* Card */}
+        <div className="bg-white rounded-2xl shadow-2xl p-8">
+          <h2 className="text-2xl font-bold text-gray-800 mb-6">Sign In</h2>
+
+          {/* Demo Role Chips */}
+          <div className="mb-5">
+            <p className="text-xs text-gray-500 mb-2 font-medium">Quick Demo Login:</p>
             <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setDemoCredentials('admin')}
-                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 transition"
-              >
-                <ShieldCheck className="w-4 h-4" /> Admin
-              </button>
-              <button
-                type="button"
-                onClick={() => setDemoCredentials('doctor')}
-                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition"
-              >
-                <Stethoscope className="w-4 h-4" /> Doctor
-              </button>
-              <button
-                type="button"
-                onClick={() => setDemoCredentials('receptionist')}
-                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 transition"
-              >
-                <UserCheck className="w-4 h-4" /> Receptionist
-              </button>
-              <button
-                type="button"
-                onClick={() => setDemoCredentials('patient')}
-                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-200 transition"
-              >
-                <HeartPulse className="w-4 h-4" /> Patient
-              </button>
+              {demoRoles.map((r) => (
+                <button
+                  key={r.label}
+                  type="button"
+                  onClick={() => { setEmail(r.email); setPassword(r.password); }}
+                  className={`text-xs py-2 px-3 rounded-lg border-2 transition-all font-medium ${
+                    email === r.email
+                      ? 'border-blue-500 bg-blue-50 text-blue-700'
+                      : 'border-gray-200 text-gray-600 hover:border-blue-300'
+                  }`}
+                >
+                  {r.label}
+                </button>
+              ))}
             </div>
           </div>
 
-          <div className="relative my-4">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-200" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-2 text-slate-400 font-semibold">Or sign in with email</span>
-            </div>
-          </div>
-
+          {/* Error */}
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl">
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
               {error}
             </div>
           )}
 
-          <form onSubmit={handleLogin} className="space-y-4">
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail className="w-5 h-5 text-slate-400 absolute left-3 top-3" />
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@hospital.com"
-                  className="w-full pl-10 pr-4 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:outline-none"
-                />
-              </div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Enter your email"
+                required
+              />
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                Password
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
               <div className="relative">
-                <Lock className="w-5 h-5 text-slate-400 absolute left-3 top-3" />
                 <input
-                  type="password"
-                  required
+                  type={showPass ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:outline-none"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
+                  placeholder="Enter your password"
+                  required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPass(!showPass)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-2 flex items-center justify-center gap-2 py-3 px-4 bg-sky-600 hover:bg-sky-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-sky-600/30 transition disabled:opacity-50"
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
             >
-              {loading ? 'Authenticating...' : 'Sign In to Portal'}
-              <ArrowRight className="w-4 h-4" />
+              {loading ? (
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <>
+                  <LogIn className="w-4 h-4" />
+                  Sign In to Portal
+                </>
+              )}
             </button>
           </form>
 
-          <div className="mt-6 text-center text-xs text-slate-600">
-            Don't have an account?{' '}
-            <Link to="/register" className="font-bold text-sky-600 hover:text-sky-700">
-              Register as New Patient
+          <p className="text-center text-sm text-gray-500 mt-6">
+            New patient?{' '}
+            <Link to="/register" className="text-blue-600 hover:underline font-medium">
+              Register here
             </Link>
-          </div>
+          </p>
         </div>
+
+        <p className="text-center text-blue-200 text-xs mt-4">
+          © 2026 CareSync HMS · All Rights Reserved
+        </p>
       </div>
     </div>
   );

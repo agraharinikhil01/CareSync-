@@ -1,28 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const {
-  getDashboardStats,
-  getAllDoctors,
-  createDoctor,
-  updateDoctor,
-  getAllPatients,
-  getAllStaff,
-  toggleUserStatus,
-} = require('../controllers/adminController');
+const { getDashboardStats, getAllUsers, toggleUserStatus, deleteUser } = require('../controllers/adminController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
-// Role authorization
-router.use(protect);
-
-router.get('/patients', authorize('admin', 'receptionist'), getAllPatients);
-router.get('/doctors', authorize('admin', 'receptionist'), getAllDoctors);
-
-// Admin-only routes
-router.use(authorize('admin'));
+router.use(protect, authorize('admin'));
 router.get('/stats', getDashboardStats);
-router.post('/doctors', createDoctor);
-router.put('/doctors/:id', updateDoctor);
-router.get('/staff', getAllStaff);
-router.patch('/users/:id/toggle-status', toggleUserStatus);
+router.get('/users', getAllUsers);
+router.patch('/users/:id/toggle', toggleUserStatus);
+router.delete('/users/:id', deleteUser);
 
 module.exports = router;

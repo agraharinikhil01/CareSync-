@@ -1,60 +1,54 @@
 import api from './axios';
 
-// Auth Endpoints
-export const loginApi = (data) => api.post('/auth/login', data);
-export const registerApi = (data) => api.post('/auth/register', data);
-export const getMeApi = () => api.get('/auth/me');
-export const updateProfileApi = (data) => api.put('/auth/profile', data);
+// Auth
+export const loginApi       = (data)    => api.post('/auth/login', data);
+export const registerApi    = (data)    => api.post('/auth/register', data);
+export const getMeApi       = ()        => api.get('/auth/me');
+export const changePasswordApi = (data) => api.patch('/auth/change-password', data);
 
-// Admin Endpoints
-export const getAdminStatsApi = () => api.get('/admin/stats');
-export const getAdminDoctorsApi = () => api.get('/admin/doctors');
-export const createAdminDoctorApi = (data) => api.post('/admin/doctors', data);
-export const updateAdminDoctorApi = (id, data) => api.put(`/admin/doctors/${id}`, data);
-export const getAdminPatientsApi = () => api.get('/admin/patients');
-export const getAdminStaffApi = () => api.get('/admin/staff');
-export const toggleUserStatusApi = (id) => api.patch(`/admin/users/${id}/toggle-status`);
+// Admin
+export const getAdminStats  = ()        => api.get('/admin/stats');
+export const getAllUsers     = ()        => api.get('/admin/users');
+export const toggleUser     = (id)      => api.patch(`/admin/users/${id}/toggle`);
+export const deleteUser     = (id)      => api.delete(`/admin/users/${id}`);
 
-// Doctor Endpoints
-export const getDoctorsListApi = (params) => api.get('/doctors', { params });
-export const getDoctorDetailsApi = (id) => api.get(`/doctors/${id}`);
-export const getDoctorDashboardMetricsApi = () => api.get('/doctors/dashboard/metrics');
-export const getDoctorAppointmentsApi = (params) => api.get('/doctors/dashboard/appointments', { params });
-export const getDoctorPatientsApi = () => api.get('/doctors/dashboard/patients');
+// Doctors
+export const getAllDoctors    = ()       => api.get('/doctors');
+export const getDoctorById   = (id)     => api.get(`/doctors/${id}`);
+export const getDoctorProfile= ()       => api.get('/doctors/my-profile');
+export const updateDoctorProfile=(data) => api.patch('/doctors/my-profile', data);
+export const getDoctorAppointments=()   => api.get('/doctors/my-appointments');
+export const getDoctorPrescriptions=()  => api.get('/doctors/my-prescriptions');
 
-// Patient Endpoints
-export const getPatientProfileApi = (params) => api.get('/patients/profile', { params });
-export const getEmergencyProfileApi = (patientId) => api.get(`/patients/emergency/${patientId}`);
-export const updatePatientProfileApi = (data) => api.put('/patients/profile', data);
-export const getPatientDashboardApi = () => api.get('/patients/dashboard');
-export const addMedicalRecordApi = (id, data) => api.post(`/patients/${id}/medical-records`, data);
+// Patients
+export const getAllPatients   = ()       => api.get('/patients');
+export const getPatientProfile= ()      => api.get('/patients/my-profile');
+export const updatePatientProfile=(d)   => api.patch('/patients/my-profile', d);
+export const getPatientAppointments=()  => api.get('/patients/my-appointments');
+export const getPatientPrescriptions=() => api.get('/patients/my-prescriptions');
+export const getPatientBills= ()        => api.get('/patients/my-bills');
 
-// Appointment Endpoints
-export const createAppointmentApi = (data) => api.post('/appointments', data);
-export const getAppointmentsApi = (params) => api.get('/appointments', { params });
-export const updateAppointmentStatusApi = (id, data) => api.patch(`/appointments/${id}/status`, data);
+// Appointments
+export const createAppointment  = (d)   => api.post('/appointments', d);
+export const getAppointments    = ()    => api.get('/appointments');
+export const updateAppointmentStatus=(id,d)=> api.patch(`/appointments/${id}/status`,d);
+export const deleteAppointment  = (id)  => api.delete(`/appointments/${id}`);
 
-// Prescription Endpoints
-export const createPrescriptionApi = (data) => api.post('/prescriptions', data);
-export const checkDrugSafetyApi = (data) => api.post('/prescriptions/check-safety', data);
-export const getPrescriptionsApi = (params) => api.get('/prescriptions', { params });
-export const getPrescriptionByIdApi = (id) => api.get(`/prescriptions/${id}`);
+// Prescriptions
+export const createPrescription = (d)   => api.post('/prescriptions', d);
+export const getPrescriptions   = ()    => api.get('/prescriptions');
+export const verifyPrescription = (hash)=> api.get(`/prescriptions/verify/${hash}`);
 
-// Billing Endpoints
-export const createInvoiceApi = (data) => api.post('/billing', data);
-export const getInvoicesApi = (params) => api.get('/billing', { params });
-export const getInvoiceByIdApi = (id) => api.get(`/billing/${id}`);
-export const getPublicInvoiceApi = (id) => api.get(`/billing/public/${id}`);
-export const payPublicInvoiceApi = (id, data) => api.post(`/billing/public/${id}/pay`, data);
-export const updatePaymentStatusApi = (id, data) => api.patch(`/billing/${id}/pay`, data);
+// Beds
+export const getBeds            = ()    => api.get('/beds');
+export const admitPatient       = (id,d)=> api.patch(`/beds/${id}/admit`, d);
+export const dischargePatient   = (id)  => api.patch(`/beds/${id}/discharge`);
 
-// Bed Endpoints
-export const getBedsApi = (params) => api.get('/beds', { params });
-export const createBedApi = (data) => api.post('/beds', data);
-export const allocateBedApi = (id, data) => api.patch(`/beds/${id}/allocate`, data);
-export const releaseBedApi = (id) => api.patch(`/beds/${id}/release`);
-export const deleteBedApi = (id) => api.delete(`/beds/${id}`);
+// Billing
+export const createBill         = (d)   => api.post('/billing', d);
+export const getBills           = ()    => api.get('/billing');
+export const markBillPaid       = (id,d)=> api.patch(`/billing/${id}/pay`, d);
+export const getBillingStats    = ()    => api.get('/billing/stats');
 
-// AI Health & Hospital Assistant Endpoints
-export const askAiAssistantApi = (data) => api.post('/ai/chat', data);
-export const getAiSuggestionsApi = () => api.get('/ai/suggestions');
+// AI
+export const chatWithAI         = (d)   => api.post('/ai/chat', d);

@@ -1,21 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const {
-  getDoctors,
-  getDoctorById,
-  getDoctorDashboard,
-  getDoctorAppointments,
-  getDoctorPatients,
-} = require('../controllers/doctorController');
+const { getAllDoctors, getDoctorById, getMyProfile, updateMyProfile, getMyAppointments, getMyPrescriptions } = require('../controllers/doctorController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
-// Public routes for patient doctor search
-router.get('/', getDoctors);
-router.get('/:id', getDoctorById);
-
-// Doctor protected routes
-router.get('/dashboard/metrics', protect, authorize('doctor'), getDoctorDashboard);
-router.get('/dashboard/appointments', protect, authorize('doctor'), getDoctorAppointments);
-router.get('/dashboard/patients', protect, authorize('doctor'), getDoctorPatients);
+router.get('/', protect, getAllDoctors);
+router.get('/my-profile', protect, authorize('doctor'), getMyProfile);
+router.patch('/my-profile', protect, authorize('doctor'), updateMyProfile);
+router.get('/my-appointments', protect, authorize('doctor'), getMyAppointments);
+router.get('/my-prescriptions', protect, authorize('doctor'), getMyPrescriptions);
+router.get('/:id', protect, getDoctorById);
 
 module.exports = router;

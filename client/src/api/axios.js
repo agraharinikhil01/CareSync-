@@ -2,32 +2,24 @@ import axios from 'axios';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: { 'Content-Type': 'application/json' },
 });
 
-// Request Interceptor: Attach Auth Token
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('hms_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
+// Attach token to every request
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('cs_token');
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
 
-// Response Interceptor: Handle Unauthorized 401
+// Handle 401 - auto logout
 api.interceptors.response.use(
-  (response) => response,
+  (res) => res,
   (error) => {
-    if (error.response && error.response.status === 401) {
-      // If token is expired or unauthorized, clear storage and redirect
-      if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
-        localStorage.removeItem('hms_token');
-        localStorage.removeItem('hms_user');
+    if (error.response?.status === 401) {
+      const path = window.location.pathname;
+      if (path !== '/login' && path !== '/register') {
+        localStorage.clear();
         window.location.href = '/login';
       }
     }

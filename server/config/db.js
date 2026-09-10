@@ -3,27 +3,15 @@ const mongoose = require('mongoose');
 let isConnected = false;
 
 const connectDB = async () => {
-  if (isConnected || mongoose.connection.readyState >= 1) {
-    return mongoose.connection;
-  }
+  if (isConnected) return;
 
   try {
-    const mongoUri =
-      process.env.MONGO_URI ||
-      'mongodb+srv://agraharinikhil999_db_user:rFWNmW2suPWDyDfV@cluster0.panlxcw.mongodb.net/hospital_management?retryWrites=true&w=majority&appName=Cluster0';
-
-    const conn = await mongoose.connect(mongoUri, {
-      serverSelectionTimeoutMS: 5000,
-    });
+    const conn = await mongoose.connect(process.env.MONGO_URI);
     isConnected = true;
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
-    return conn;
+    console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
-    console.error(`MongoDB Connection Error: ${error.message}`);
-    // Do not hard-exit in serverless cloud environments
-    if (process.env.NODE_ENV !== 'production') {
-      // Allow local retry
-    }
+    console.error(`❌ MongoDB Error: ${error.message}`);
+    process.exit(1);
   }
 };
 

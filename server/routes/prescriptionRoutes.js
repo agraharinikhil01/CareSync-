@@ -1,18 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const {
-  createPrescription,
-  getPrescriptions,
-  getPrescriptionById,
-  checkDrugSafety,
-} = require('../controllers/prescriptionController');
+const { createPrescription, getPrescriptions, verifyPrescription } = require('../controllers/prescriptionController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
-router.use(protect);
-
-router.post('/check-safety', checkDrugSafety);
-router.post('/', authorize('doctor'), createPrescription);
-router.get('/', getPrescriptions);
-router.get('/:id', getPrescriptionById);
+router.post('/', protect, authorize('doctor'), createPrescription);
+router.get('/', protect, getPrescriptions);
+router.get('/verify/:hash', verifyPrescription); // public route
 
 module.exports = router;

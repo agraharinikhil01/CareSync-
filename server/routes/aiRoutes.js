@@ -1,9 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { handleAIChat, getAISuggestions } = require('../controllers/aiController');
+const { chatWithAI } = require('../controllers/aiController');
+const { protect } = require('../middleware/authMiddleware');
 
-// Public AI Assistant Endpoints (Available to all logged-in and public users)
-router.post('/chat', handleAIChat);
-router.get('/suggestions', getAISuggestions);
+router.post('/chat', protect, chatWithAI);
 
 module.exports = router;

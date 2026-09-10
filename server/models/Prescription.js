@@ -1,73 +1,22 @@
 const mongoose = require('mongoose');
 
-const medicineSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-  },
-  dosage: {
-    type: String,
-    required: true, // e.g. "500mg"
-  },
-  frequency: {
-    type: String,
-    required: true, // e.g. "Twice a day (1-0-1)"
-  },
-  duration: {
-    type: String,
-    required: true, // e.g. "5 days"
-  },
-  instructions: {
-    type: String,
-    default: 'After meals',
-  },
+const MedicineSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  dosage: { type: String },
+  frequency: { type: String },
+  duration: { type: String },
+  instructions: { type: String },
 });
 
-const prescriptionSchema = new mongoose.Schema(
-  {
-    appointmentId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Appointment',
-      required: true,
-    },
-    doctorId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true,
-    },
-    patientId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true,
-    },
-    diagnosis: {
-      type: String,
-      required: [true, 'Diagnosis is required'],
-    },
-    symptoms: {
-      type: String,
-      default: '',
-    },
-    medicines: [medicineSchema],
-    tests: {
-      type: [String],
-      default: [],
-    },
-    advice: {
-      type: String,
-      default: 'Drink plenty of water and get adequate rest.',
-    },
-    followUpDate: {
-      type: Date,
-    },
-    date: {
-      type: Date,
-      default: Date.now,
-    },
-  },
-  {
-    timestamps: true,
-  }
-);
+const PrescriptionSchema = new mongoose.Schema({
+  patient: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  doctor: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  appointment: { type: mongoose.Schema.Types.ObjectId, ref: 'Appointment' },
+  diagnosis: { type: String, required: true },
+  medicines: [MedicineSchema],
+  advice: { type: String },
+  followUpDate: { type: Date },
+  verificationHash: { type: String, unique: true },
+}, { timestamps: true });
 
-module.exports = mongoose.model('Prescription', prescriptionSchema);
+module.exports = mongoose.model('Prescription', PrescriptionSchema);

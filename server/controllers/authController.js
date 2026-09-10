@@ -3,7 +3,8 @@ const User = require('../models/User');
 const DoctorProfile = require('../models/DoctorProfile');
 const PatientProfile = require('../models/PatientProfile');
 
-const generateToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRE || '7d' });
+const JWT_SECRET = process.env.JWT_SECRET || 'caresync_super_secret_jwt_key_2026_change_this';
+const generateToken = (id) => jwt.sign({ id }, JWT_SECRET, { expiresIn: process.env.JWT_EXPIRE || '7d' });
 
 // @route POST /api/auth/register
 const registerUser = async (req, res) => {

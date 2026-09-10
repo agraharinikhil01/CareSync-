@@ -28,19 +28,46 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(morgan('dev'));
 
-// Health check
-app.get('/api/health', (req, res) => res.json({ success: true, message: '🏥 CareSync HMS API is running!' }));
+// Ensure database is connected on serverless cold starts
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+  } catch (err) {
+    console.error('DB connect error:', err.message);
+  }
+  next();
+});
 
-// API Routes
+// Health check
+app.get(['/api/health', '/health'], (req, res) => res.json({ success: true, message: '🏥 CareSync HMS API is running!' }));
+
+// API Routes (supports both /api/* and direct /* in serverless)
 app.use('/api/auth', authRoutes);
+app.use('/auth', authRoutes);
+
 app.use('/api/admin', adminRoutes);
+app.use('/admin', adminRoutes);
+
 app.use('/api/doctors', doctorRoutes);
+app.use('/doctors', doctorRoutes);
+
 app.use('/api/patients', patientRoutes);
+app.use('/patients', patientRoutes);
+
 app.use('/api/appointments', appointmentRoutes);
+app.use('/appointments', appointmentRoutes);
+
 app.use('/api/prescriptions', prescriptionRoutes);
+app.use('/prescriptions', prescriptionRoutes);
+
 app.use('/api/beds', bedRoutes);
+app.use('/beds', bedRoutes);
+
 app.use('/api/billing', billingRoutes);
+app.use('/billing', billingRoutes);
+
 app.use('/api/ai', aiRoutes);
+app.use('/ai', aiRoutes);
 
 // Error Handlers
 app.use(notFound);

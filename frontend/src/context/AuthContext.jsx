@@ -26,8 +26,10 @@ export const AuthProvider = ({ children }) => {
             localStorage.setItem('user', JSON.stringify(res.data.data.user));
           }
         })
-        .catch(() => {
-          logout();
+        .catch((err) => {
+          if (err.response?.status === 401) {
+            logout(true);
+          }
         })
         .finally(() => setLoading(false));
     } else {
@@ -73,12 +75,14 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
+  const logout = (silent = false) => {
     setToken(null);
     setUser(null);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    toast.success('Signed out successfully');
+    if (!silent) {
+      toast.success('Signed out successfully');
+    }
   };
 
   return (

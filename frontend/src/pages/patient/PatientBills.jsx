@@ -127,7 +127,7 @@ const PatientBills = () => {
                         })}
                       </td>
                       <td className="py-3.5 px-5 text-xs text-slate-600 max-w-xs truncate">
-                        {b.items?.map((i) => i.description).join(', ')}
+                        {b.items?.map((i) => i.description || i.name).join(', ') || 'Consultation & Clinical Services'}
                       </td>
                       <td className="py-3.5 px-5 font-bold text-slate-900">
                         ₹{b.totalAmount?.toLocaleString('en-IN')}
@@ -141,12 +141,12 @@ const PatientBills = () => {
                           }`}
                         >
                           <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
-                          {b.paymentStatus}
+                          {b.paymentStatus === 'UNPAID' ? 'PENDING' : b.paymentStatus}
                         </span>
                       </td>
                       <td className="py-3.5 px-5 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          {b.paymentStatus === 'PENDING' && (
+                          {(b.paymentStatus === 'PENDING' || b.paymentStatus === 'UNPAID') && (
                             <button
                               onClick={() => handlePayNow(b._id)}
                               className="px-3.5 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-semibold rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"

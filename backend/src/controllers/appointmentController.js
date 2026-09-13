@@ -1,9 +1,11 @@
 const Appointment = require('../models/Appointment');
 const User = require('../models/User');
+const Doctor = require('../models/Doctor');
+const Patient = require('../models/Patient');
 const { sendAppointmentEmail } = require('../services/emailService');
 const { generateAppointmentQR } = require('../services/qrService');
 
-// POST /api/appointments (Patient or Receptionist)
+// POST /api/appointments (Patient or Receptionist or Admin)
 const createAppointment = async (req, res) => {
   try {
     const { doctor, date, time, reason } = req.body;
@@ -15,8 +17,23 @@ const createAppointment = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please specify a patient' });
     }
 
-    // Verify doctor exists
-    const doctorUser = await User.findOne({ _id: doctor, role: 'DOCTOR' });
+    // Check if patientId is a Patient document ID rather than User ID
+    const patientDoc = await Patient.findById(patientId);
+    if (patientDoc && patientDoc.user) {
+      patientId = patientDoc.user;
+    }
+
+    // Verify doctor exists - check whether doctor is User ID or Doctor doc ID
+    let doctorUserId = doctor;
+    let doctorUser = await User.findOne({ _id: doctor, role: 'DOCTOR' });
+    if (!doctorUser) {
+      const docRecord = await Doctor.findById(doctor);
+      if (docRecord && docRecord.user) {
+        doctorUserId = docRecord.user;
+        doctorUser = await User.findOne({ _id: docRecord.user, role: 'DOCTOR' });
+      }
+    }
+
     if (!doctorUser) {
       return res.status(404).json({ success: false, message: 'Doctor not found or invalid' });
     }
@@ -26,7 +43,7 @@ const createAppointment = async (req, res) => {
 
     // CRITICAL: Double Booking Prevention
     const conflict = await Appointment.findOne({
-      doctor,
+      doctor: doctorUserId,
       date: apptDate,
       time,
       status: { $ne: 'CANCELLED' },
@@ -41,7 +58,7 @@ const createAppointment = async (req, res) => {
 
     const appointment = await Appointment.create({
       patient: patientId,
-      doctor,
+      doctor: doctorUserId,
       date: apptDate,
       time,
       reason: reason || 'General Clinical Consultation',
@@ -78,7 +95,9 @@ const getAppointments = async (req, res) => {
       filter.doctor = req.user._id;
     }
 
-    if (status) filter.status = status.toUpperCase();
+    if (status && status !== 'ALL') {
+      filter.status = status.toUpperCase();
+    }
 
     if (date) {
       const d = new Date(date);

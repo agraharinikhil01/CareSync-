@@ -1,34 +1,62 @@
 const crypto = require('crypto');
 const Prescription = require('../models/Prescription');
+const Patient = require('../models/Patient');
 const { generatePrescriptionPDF } = require('../services/pdfService');
 const { generatePrescriptionVerificationQR } = require('../services/qrService');
 
 // POST /api/prescriptions (Doctor only)
 const createPrescription = async (req, res) => {
   try {
-    const { patient, appointment, diagnosis, medicines, instructions, notes } = req.body;
+    const {
+      patient,
+      appointment,
+      diagnosis,
+      symptoms,
+      medicines,
+      advice,
+      instructions,
+      notes,
+      labTests,
+      followUpDate,
+    } = req.body;
 
     if (!patient || !diagnosis || !medicines || medicines.length === 0) {
       return res.status(400).json({ success: false, message: 'Please provide patient, diagnosis, and at least one medicine' });
     }
 
+    // Normalize patient ID (User ID vs Patient doc ID)
+    let patientUserId = patient;
+    const patientDoc = await Patient.findById(patient);
+    if (patientDoc && patientDoc.user) {
+      patientUserId = patientDoc.user;
+    }
+
     const verificationHash = crypto
       .createHash('sha256')
-      .update(`${patient}-${req.user._id}-${diagnosis}-${Date.now()}`)
+      .update(`${patientUserId}-${req.user._id}-${diagnosis}-${Date.now()}`)
       .digest('hex');
 
-    const prescription = await Prescription.create({
-      patient,
+    const prescription = new Prescription({
+      patient: patientUserId,
       doctor: req.user._id,
       appointment: appointment || null,
       diagnosis,
+      symptoms: Array.isArray(symptoms) ? symptoms : [],
       medicines,
-      instructions: instructions || '',
+      advice: advice || instructions || '',
+      instructions: instructions || advice || '',
       notes: notes || '',
+      labTests: Array.isArray(labTests) ? labTests : [],
+      followUpDate: followUpDate || null,
       verificationHash,
     });
 
+    const qrCode = await generatePrescriptionVerificationQR(prescription._id.toString(), verificationHash);
+    prescription.qrCode = qrCode || '';
+
+    await prescription.save();
     await prescription.populate(['patient', 'doctor']);
+
     res.status(201).json({ success: true, message: 'Prescription created', data: prescription });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -42,10 +70,23 @@ const getPrescriptions = async (req, res) => {
     if (req.user.role === 'PATIENT') filter.patient = req.user._id;
     if (req.user.role === 'DOCTOR') filter.doctor = req.user._id;
 
-    const prescriptions = await Prescription.find(filter)
+    const rawPrescriptions = await Prescription.find(filter)
       .populate('patient', 'name email phone')
       .populate('doctor', 'name email phone')
       .sort({ createdAt: -1 });
+
+    const prescriptions = await Promise.all(
+      rawPrescriptions.map(async (rx) => {
+        const obj = rx.toObject();
+        if (!obj.qrCode) {
+          obj.qrCode = await generatePrescriptionVerificationQR(
+            obj._id.toString(),
+            obj.verificationHash || obj._id.toString()
+          );
+        }
+        return obj;
+      })
+    );
 
     res.json({ success: true, data: prescriptions });
   } catch (err) {
@@ -62,7 +103,11 @@ const getPrescriptionById = async (req, res) => {
 
     if (!prescription) return res.status(404).json({ success: false, message: 'Prescription not found' });
 
-    const qrCode = await generatePrescriptionVerificationQR(prescription._id.toString(), prescription.verificationHash);
+    let qrCode = prescription.qrCode;
+    if (!qrCode) {
+      qrCode = await generatePrescriptionVerificationQR(prescription._id.toString(), prescription.verificationHash);
+    }
+
     res.json({ success: true, data: { ...prescription.toObject(), qrCode } });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

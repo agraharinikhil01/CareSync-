@@ -8,6 +8,10 @@ const MedicineItemSchema = new mongoose.Schema({
   instructions: { type: String, default: 'After meals' },
 });
 
+const LabTestSchema = new mongoose.Schema({
+  testName: { type: String, required: true },
+});
+
 const PrescriptionSchema = new mongoose.Schema(
   {
     patient: {
@@ -29,7 +33,15 @@ const PrescriptionSchema = new mongoose.Schema(
       required: [true, 'Please provide clinical diagnosis'],
       trim: true,
     },
+    symptoms: {
+      type: [String],
+      default: [],
+    },
     medicines: [MedicineItemSchema],
+    advice: {
+      type: String,
+      default: '',
+    },
     instructions: {
       type: String,
       default: '',
@@ -38,7 +50,16 @@ const PrescriptionSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    labTests: [LabTestSchema],
+    followUpDate: {
+      type: Date,
+      default: null,
+    },
     verificationHash: {
+      type: String,
+      default: '',
+    },
+    qrCode: {
       type: String,
       default: '',
     },

@@ -157,6 +157,7 @@ const ReceptionistBills = () => {
       case 'PAID':
         return 'bg-emerald-50 text-emerald-700 border-emerald-200/80';
       case 'PENDING':
+      case 'UNPAID':
         return 'bg-amber-50 text-amber-700 border-amber-200/80';
       default:
         return 'bg-rose-50 text-rose-700 border-rose-200/80';
@@ -284,12 +285,12 @@ const ReceptionistBills = () => {
                           )}`}
                         >
                           <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
-                          {b.paymentStatus}
+                          {b.paymentStatus === 'UNPAID' ? 'PENDING' : b.paymentStatus}
                         </span>
                       </td>
                       <td className="py-3.5 px-5 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          {b.paymentStatus === 'PENDING' && (
+                          {(b.paymentStatus === 'PENDING' || b.paymentStatus === 'UNPAID') && (
                             <button
                               onClick={() => handleMarkPaid(b._id)}
                               className="px-2.5 py-1 text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg border border-emerald-200/80 transition-colors cursor-pointer"

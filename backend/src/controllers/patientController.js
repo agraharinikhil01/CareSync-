@@ -17,15 +17,32 @@ const getPatients = async (req, res) => {
           { phone: { $regex: search, $options: 'i' } },
         ],
       }).select('_id');
-      query.user = { $in: userMatches.map((u) => u._id) };
+
+      query.$or = [
+        { user: { $in: userMatches.map((u) => u._id) } },
+        { patientId: { $regex: search, $options: 'i' } },
+      ];
     }
 
     if (gender) query.gender = gender;
     if (bloodGroup) query.bloodGroup = bloodGroup;
 
-    const patients = await Patient.find(query)
+    const rawPatients = await Patient.find(query)
       .populate('user', 'name email phone profileImage createdAt')
       .sort({ createdAt: -1 });
+
+    const patients = await Promise.all(
+      rawPatients.map(async (p) => {
+        const obj = p.toObject();
+        if (!obj.patientId) {
+          obj.patientId = `PAT-${obj._id.toString().slice(-6).toUpperCase()}`;
+        }
+        if (!obj.qrCode && obj.user) {
+          obj.qrCode = await generatePatientIdQR(obj.patientId, obj.user?.name);
+        }
+        return obj;
+      })
+    );
 
     res.json({ success: true, data: patients });
   } catch (err) {
@@ -39,9 +56,15 @@ const getPatientById = async (req, res) => {
     const patient = await Patient.findById(req.params.id).populate('user', '-password');
     if (!patient) return res.status(404).json({ success: false, message: 'Patient not found' });
 
-    const qrCode = await generatePatientIdQR(patient._id.toString(), patient.user?.name);
+    const obj = patient.toObject();
+    if (!obj.patientId) {
+      obj.patientId = `PAT-${obj._id.toString().slice(-6).toUpperCase()}`;
+    }
+    if (!obj.qrCode) {
+      obj.qrCode = await generatePatientIdQR(obj.patientId, obj.user?.name);
+    }
 
-    res.json({ success: true, data: { ...patient.toObject(), qrCode } });
+    res.json({ success: true, data: obj });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -52,22 +75,45 @@ const getMyPatientProfile = async (req, res) => {
   try {
     let patient = await Patient.findOne({ user: req.user._id }).populate('user', '-password');
     if (!patient) {
-      patient = await Patient.create({ user: req.user._id });
+      patient = new Patient({
+        user: req.user._id,
+        patientId: `PAT-${Date.now().toString().slice(-6)}`,
+      });
+      await patient.save();
       await patient.populate('user', '-password');
     }
 
-    const qrCode = await generatePatientIdQR(patient._id.toString(), patient.user?.name);
+    const obj = patient.toObject();
+    if (!obj.patientId) {
+      obj.patientId = `PAT-${obj._id.toString().slice(-6).toUpperCase()}`;
+    }
+    if (!obj.qrCode) {
+      obj.qrCode = await generatePatientIdQR(obj.patientId, obj.user?.name);
+    }
 
-    res.json({ success: true, data: { ...patient.toObject(), qrCode } });
+    res.json({ success: true, data: obj });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 };
 
-// POST /api/patients (Admin only)
+// POST /api/patients (Admin & Receptionist)
 const createPatient = async (req, res) => {
   try {
-    const { name, email, password, phone, dob, gender, bloodGroup, address, emergencyContact } = req.body;
+    const {
+      name,
+      email,
+      password,
+      phone,
+      dob,
+      gender,
+      bloodGroup,
+      address,
+      emergencyContact,
+      allergies,
+      chronicDiseases,
+      medicalHistory,
+    } = req.body;
 
     const existing = await User.findOne({ email: email?.toLowerCase() });
     if (existing) return res.status(400).json({ success: false, message: 'Email already in use' });
@@ -80,13 +126,33 @@ const createPatient = async (req, res) => {
       role: 'PATIENT',
     });
 
+    const patientId = `PAT-${Date.now().toString().slice(-6)}`;
+    const qrCode = (await generatePatientIdQR(patientId, name)) || '';
+
+    let allergiesList = [];
+    if (Array.isArray(allergies)) allergiesList = allergies;
+    else if (typeof allergies === 'string') allergiesList = allergies.split(',').map((s) => s.trim()).filter(Boolean);
+
+    let chronicList = [];
+    if (Array.isArray(chronicDiseases)) chronicList = chronicDiseases;
+    else if (typeof chronicDiseases === 'string') chronicList = chronicDiseases.split(',').map((s) => s.trim()).filter(Boolean);
+
+    let medHist = [];
+    if (Array.isArray(medicalHistory)) medHist = medicalHistory;
+    else if (typeof medicalHistory === 'string') medHist = medicalHistory.split(',').map((s) => s.trim()).filter(Boolean);
+
     const patient = await Patient.create({
+      patientId,
       user: user._id,
-      dob,
+      dob: dob || null,
       gender: gender || 'Male',
       bloodGroup: bloodGroup || 'O+',
-      address,
-      emergencyContact,
+      address: address || '',
+      emergencyContact: emergencyContact || {},
+      allergies: allergiesList,
+      chronicDiseases: chronicList,
+      medicalHistory: medHist,
+      qrCode,
     });
 
     await patient.populate('user', '-password');
@@ -96,10 +162,21 @@ const createPatient = async (req, res) => {
   }
 };
 
-// PUT /api/patients/:id (Admin or Patient owner)
+// PUT /api/patients/:id (Admin, Receptionist, or Patient owner)
 const updatePatient = async (req, res) => {
   try {
-    const { name, phone, dob, gender, bloodGroup, address, emergencyContact, medicalHistory } = req.body;
+    const {
+      name,
+      phone,
+      dob,
+      gender,
+      bloodGroup,
+      address,
+      emergencyContact,
+      allergies,
+      chronicDiseases,
+      medicalHistory,
+    } = req.body;
 
     const patient = await Patient.findById(req.params.id);
     if (!patient) return res.status(404).json({ success: false, message: 'Patient record not found' });
@@ -113,12 +190,46 @@ const updatePatient = async (req, res) => {
       await User.findByIdAndUpdate(patient.user, { name, phone });
     }
 
-    patient.dob = dob || patient.dob;
-    patient.gender = gender || patient.gender;
-    patient.bloodGroup = bloodGroup || patient.bloodGroup;
-    patient.address = address || patient.address;
+    if (dob) patient.dob = dob;
+    if (gender) patient.gender = gender;
+    if (bloodGroup) patient.bloodGroup = bloodGroup;
+    if (address !== undefined) patient.address = address;
     if (emergencyContact) patient.emergencyContact = emergencyContact;
-    if (medicalHistory) patient.medicalHistory = medicalHistory;
+
+    // Handle nested medicalHistory object from frontend
+    if (medicalHistory && typeof medicalHistory === 'object' && !Array.isArray(medicalHistory)) {
+      if (medicalHistory.allergies) {
+        patient.allergies = Array.isArray(medicalHistory.allergies)
+          ? medicalHistory.allergies
+          : medicalHistory.allergies.split(',').map((s) => s.trim()).filter(Boolean);
+      }
+      if (medicalHistory.chronicDiseases) {
+        patient.chronicDiseases = Array.isArray(medicalHistory.chronicDiseases)
+          ? medicalHistory.chronicDiseases
+          : medicalHistory.chronicDiseases.split(',').map((s) => s.trim()).filter(Boolean);
+      }
+      if (medicalHistory.previousSurgeries) {
+        patient.medicalHistory = Array.isArray(medicalHistory.previousSurgeries)
+          ? medicalHistory.previousSurgeries
+          : medicalHistory.previousSurgeries.split(',').map((s) => s.trim()).filter(Boolean);
+      }
+    } else {
+      if (allergies) {
+        patient.allergies = Array.isArray(allergies)
+          ? allergies
+          : allergies.split(',').map((s) => s.trim()).filter(Boolean);
+      }
+      if (chronicDiseases) {
+        patient.chronicDiseases = Array.isArray(chronicDiseases)
+          ? chronicDiseases
+          : chronicDiseases.split(',').map((s) => s.trim()).filter(Boolean);
+      }
+      if (medicalHistory) {
+        patient.medicalHistory = Array.isArray(medicalHistory)
+          ? medicalHistory
+          : medicalHistory.split(',').map((s) => s.trim()).filter(Boolean);
+      }
+    }
 
     await patient.save();
     await patient.populate('user', '-password');

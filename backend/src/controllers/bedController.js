@@ -1,5 +1,6 @@
 const Bed = require('../models/Bed');
 const User = require('../models/User');
+const Patient = require('../models/Patient');
 
 // GET /api/beds
 const getBeds = async (req, res) => {
@@ -7,7 +8,7 @@ const getBeds = async (req, res) => {
     const { floor, status } = req.query;
     let query = {};
     if (floor) query.floor = Number(floor);
-    if (status) query.status = status.toUpperCase();
+    if (status && status !== 'ALL') query.status = status.toUpperCase();
 
     const beds = await Bed.find(query).populate('patient', 'name email phone gender').sort({ bedNumber: 1 });
     res.json({ success: true, data: beds });
@@ -61,11 +62,20 @@ const assignBed = async (req, res) => {
       return res.status(400).json({ success: false, message: `Bed ${bed.bedNumber} is already occupied by another patient` });
     }
 
-    const patient = await User.findOne({ _id: patientId, role: 'PATIENT' });
+    let patient = await User.findOne({ _id: patientId, role: 'PATIENT' });
+    let resolvedUserId = patientId;
+    if (!patient) {
+      const patientDoc = await Patient.findById(patientId);
+      if (patientDoc && patientDoc.user) {
+        resolvedUserId = patientDoc.user;
+        patient = await User.findById(resolvedUserId);
+      }
+    }
+
     if (!patient) return res.status(404).json({ success: false, message: 'Patient not found' });
 
     // Ensure patient isn't currently in another bed
-    const currentOccupied = await Bed.findOne({ patient: patientId, status: 'OCCUPIED' });
+    const currentOccupied = await Bed.findOne({ patient: resolvedUserId, status: 'OCCUPIED' });
     if (currentOccupied && currentOccupied._id.toString() !== bed._id.toString()) {
       return res.status(400).json({
         success: false,
@@ -74,7 +84,7 @@ const assignBed = async (req, res) => {
     }
 
     bed.status = 'OCCUPIED';
-    bed.patient = patientId;
+    bed.patient = resolvedUserId;
     bed.assignedAt = new Date();
     bed.dischargedAt = null;
 

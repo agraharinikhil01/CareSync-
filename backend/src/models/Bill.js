@@ -5,8 +5,17 @@ const ServiceItemSchema = new mongoose.Schema({
   amount: { type: Number, required: true, min: 0 },
 });
 
+const LineItemSchema = new mongoose.Schema({
+  description: { type: String, required: true },
+  amount: { type: Number, required: true, min: 0 },
+});
+
 const BillSchema = new mongoose.Schema(
   {
+    invoiceNumber: {
+      type: String,
+      default: '',
+    },
     patient: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
@@ -33,6 +42,7 @@ const BillSchema = new mongoose.Schema(
       min: 0,
     },
     otherServices: [ServiceItemSchema],
+    items: [LineItemSchema],
     discount: {
       type: Number,
       default: 0,
@@ -50,8 +60,8 @@ const BillSchema = new mongoose.Schema(
     },
     paymentStatus: {
       type: String,
-      enum: ['UNPAID', 'PAID'],
-      default: 'UNPAID',
+      enum: ['UNPAID', 'PENDING', 'PAID', 'CANCELLED'],
+      default: 'PENDING',
     },
     paidAt: {
       type: Date,
@@ -59,10 +69,17 @@ const BillSchema = new mongoose.Schema(
     },
     paymentMethod: {
       type: String,
-      default: 'Cash',
+      default: 'CASH',
     },
   },
   { timestamps: true }
 );
+
+BillSchema.pre('save', function (next) {
+  if (!this.invoiceNumber) {
+    this.invoiceNumber = `INV-${this._id.toString().slice(-6).toUpperCase()}`;
+  }
+  next();
+});
 
 module.exports = mongoose.model('Bill', BillSchema);

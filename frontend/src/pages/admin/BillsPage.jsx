@@ -298,7 +298,7 @@ const BillsPage = () => {
                         {new Date(b.createdAt).toLocaleDateString()}
                       </td>
                       <td className="py-3.5 px-4 text-slate-600 max-w-xs truncate">
-                        {b.items?.map((i) => i.description).join(', ')}
+                        {b.items?.map((i) => i.description || i.name).join(', ') || 'Clinical Consultation & Services'}
                       </td>
                       <td className="py-3.5 px-4 font-extrabold text-slate-900 text-sm">
                         ₹{b.totalAmount?.toLocaleString('en-IN')}
@@ -308,17 +308,17 @@ const BillsPage = () => {
                           className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full font-bold ${
                             b.paymentStatus === 'PAID'
                               ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                              : b.paymentStatus === 'PENDING'
+                              : b.paymentStatus === 'PENDING' || b.paymentStatus === 'UNPAID'
                               ? 'bg-amber-50 text-amber-700 border border-amber-200'
                               : 'bg-rose-50 text-rose-700 border border-rose-200'
                           }`}
                         >
-                          ● {b.paymentStatus}
+                          ● {b.paymentStatus === 'UNPAID' ? 'PENDING' : b.paymentStatus}
                         </span>
                       </td>
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          {b.paymentStatus === 'PENDING' && (
+                          {(b.paymentStatus === 'PENDING' || b.paymentStatus === 'UNPAID') && (
                             <button
                               onClick={() => handleMarkPaid(b._id)}
                               className="px-2.5 py-1 text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg border border-emerald-200 cursor-pointer"

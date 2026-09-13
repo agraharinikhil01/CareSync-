@@ -64,8 +64,16 @@ const ReceptionistDashboard = () => {
     return 'Good evening';
   };
 
-  const todayStr = new Date().toISOString().split('T')[0];
-  const todayAppointments = appointments.filter((a) => a.date?.startsWith(todayStr));
+  const todayAppointments = appointments.filter((a) => {
+    if (!a.date) return false;
+    const d = new Date(a.date);
+    const today = new Date();
+    return (
+      d.getDate() === today.getDate() &&
+      d.getMonth() === today.getMonth() &&
+      d.getFullYear() === today.getFullYear()
+    );
+  });
   const pendingAppointments = appointments.filter((a) => a.status === 'PENDING');
 
   if (loading) {

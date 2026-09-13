@@ -68,6 +68,22 @@ const getAdminDashboardStats = async (req, res) => {
       },
     ]);
 
+    const processedRecentPatients = recentPatients.map((p) => {
+      const obj = p.toObject();
+      if (!obj.patientId) {
+        obj.patientId = `PAT-${obj._id.toString().slice(-6).toUpperCase()}`;
+      }
+      return obj;
+    });
+
+    const processedRecentBills = recentBills.map((b) => {
+      const obj = b.toObject();
+      if (!obj.invoiceNumber) {
+        obj.invoiceNumber = `INV-${obj._id.toString().slice(-6).toUpperCase()}`;
+      }
+      return obj;
+    });
+
     res.json({
       success: true,
       data: {
@@ -80,8 +96,8 @@ const getAdminDashboardStats = async (req, res) => {
         monthlyRevenue,
         appointmentStats: appointmentStats.map((s) => ({ status: s._id, count: s.count })),
         recentAppointments,
-        recentPatients,
-        recentBills,
+        recentPatients: processedRecentPatients,
+        recentBills: processedRecentBills,
       },
     });
   } catch (err) {

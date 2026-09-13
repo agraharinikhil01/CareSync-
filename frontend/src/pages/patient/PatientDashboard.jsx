@@ -80,7 +80,7 @@ const PatientDashboard = () => {
     (a) => a.status === 'CONFIRMED' || a.status === 'PENDING'
   );
   const latestPrescription = prescriptions[0];
-  const pendingBill = bills.find((b) => b.paymentStatus === 'PENDING');
+  const pendingBill = bills.find((b) => b.paymentStatus === 'PENDING' || b.paymentStatus === 'UNPAID');
 
   if (loading) {
     return (

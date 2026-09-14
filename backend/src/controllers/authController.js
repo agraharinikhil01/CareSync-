@@ -206,9 +206,67 @@ const resetPassword = async (req, res) => {
   }
 };
 
+// POST /api/auth/google
+const googleAuth = async (req, res) => {
+  try {
+    const { email, name, googleId, picture } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Google account email is required' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    let user = await User.findOne({ email: cleanEmail });
+
+    if (!user) {
+      // Auto-register new Google user as PATIENT
+      const randomPassword = crypto.randomBytes(16).toString('hex');
+      user = await User.create({
+        name: name || cleanEmail.split('@')[0],
+        email: cleanEmail,
+        password: randomPassword,
+        role: 'PATIENT',
+        authProvider: 'google',
+        googleId: googleId || '',
+        profileImage: picture || '',
+      });
+
+      // Create Patient EMR profile
+      await Patient.create({ user: user._id });
+    } else {
+      // Existing user: Link Google ID and update picture if not set
+      if (googleId && !user.googleId) user.googleId = googleId;
+      if (picture && !user.profileImage) user.profileImage = picture;
+      await user.save();
+    }
+
+    const token = generateToken(user._id, user.role);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Google authentication successful',
+      data: {
+        token,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          phone: user.phone,
+          profileImage: user.profileImage,
+        },
+      },
+    });
+  } catch (err) {
+    console.error('Google Auth Error:', err);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 module.exports = {
   register,
   login,
+  googleAuth,
   getMe,
   forgotPassword,
   resetPassword,

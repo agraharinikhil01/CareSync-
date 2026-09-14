@@ -75,6 +75,25 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const googleLogin = async ({ email, name, googleId, picture }) => {
+    try {
+      const res = await api.post('/auth/google', { email, name, googleId, picture });
+      if (res.data.success) {
+        const { token: newToken, user: newUser } = res.data.data;
+        setToken(newToken);
+        setUser(newUser);
+        localStorage.setItem('token', newToken);
+        localStorage.setItem('user', JSON.stringify(newUser));
+        toast.success(`Signed in with Google as ${newUser.name}!`);
+        return { success: true, user: newUser };
+      }
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Google sign-in failed.';
+      toast.error(msg);
+      return { success: false, message: msg };
+    }
+  };
+
   const logout = (silent = false) => {
     setToken(null);
     setUser(null);
@@ -86,7 +105,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout, isAuthenticated: !!token }}>
+    <AuthContext.Provider value={{ user, token, loading, login, register, googleLogin, logout, isAuthenticated: !!token }}>
       {children}
     </AuthContext.Provider>
   );

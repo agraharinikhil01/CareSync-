@@ -36,4 +36,6 @@ const protect = async (req, res, next) => {
   }
 };
 
-module.exports = { protect };
+const { authorize } = require('./roleMiddleware');
+
+module.exports = { protect, authorize };

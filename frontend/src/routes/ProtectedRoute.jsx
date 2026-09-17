@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 
 const roleDefaultRedirects = {
   ADMIN: '/admin/dashboard',
+  HOSPITAL_ADMIN: '/hospital/dashboard',
   DOCTOR: '/doctor/dashboard',
   RECEPTIONIST: '/receptionist/dashboard',
   PATIENT: '/patient/dashboard',

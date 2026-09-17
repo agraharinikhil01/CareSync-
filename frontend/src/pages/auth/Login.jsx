@@ -12,6 +12,7 @@ import {
   HeartPulse,
   X,
   CheckCircle2,
+  Building2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -22,6 +23,13 @@ const demoRoles = [
     icon: Shield,
     email: 'admin@caresync.com',
     password: 'Admin@123',
+  },
+  {
+    id: 'HOSPITAL_ADMIN',
+    label: 'Hospital',
+    icon: Building2,
+    email: 'hospital@caresync.com',
+    password: 'Hospital@123',
   },
   {
     id: 'DOCTOR',
@@ -69,6 +77,7 @@ const Login = () => {
 
   const roleRedirects = {
     ADMIN: '/admin/dashboard',
+    HOSPITAL_ADMIN: '/hospital/dashboard',
     DOCTOR: '/doctor/dashboard',
     RECEPTIONIST: '/receptionist/dashboard',
     PATIENT: '/patient/dashboard',

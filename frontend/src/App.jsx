@@ -41,6 +41,14 @@ import PatientProfile from './pages/patient/PatientProfile';
 // ClinicOCR AI Medical Document Intelligence (Doctor, Receptionist, Patient)
 import ClinicOCR from './pages/common/ClinicOCR';
 
+// HospitalRadar Public & Hospital Management Pages
+import LandingPage from './pages/public/LandingPage';
+import ExploreHospitalsPage from './pages/public/ExploreHospitalsPage';
+import HospitalDetailPage from './pages/public/HospitalDetailPage';
+import HospitalRegisterPage from './pages/public/HospitalRegisterPage';
+import HospitalAdminDashboard from './pages/hospital/HospitalAdminDashboard';
+import LiveBedManager from './pages/hospital/LiveBedManager';
+
 const RootRedirect = () => {
   const { user, loading } = useAuth();
 
@@ -53,12 +61,14 @@ const RootRedirect = () => {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   }
 
   switch (user.role) {
     case 'ADMIN':
       return <Navigate to="/admin/dashboard" replace />;
+    case 'HOSPITAL_ADMIN':
+      return <Navigate to="/hospital/dashboard" replace />;
     case 'DOCTOR':
       return <Navigate to="/doctor/dashboard" replace />;
     case 'RECEPTIONIST':
@@ -66,21 +76,43 @@ const RootRedirect = () => {
     case 'PATIENT':
       return <Navigate to="/patient/dashboard" replace />;
     default:
-      return <Navigate to="/login" replace />;
+      return <Navigate to="/" replace />;
   }
 };
 
 function App() {
   return (
     <Routes>
-      {/* Root Redirection */}
-      <Route path="/" element={<RootRedirect />} />
+      {/* Public HospitalRadar & Landing Routes */}
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/explore" element={<ExploreHospitalsPage />} />
+      <Route path="/hospitals" element={<ExploreHospitalsPage />} />
+      <Route path="/hospitals/:id" element={<HospitalDetailPage />} />
+      <Route path="/register-hospital" element={<HospitalRegisterPage />} />
 
       {/* Public Auth Routes */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+
+      {/* HOSPITAL ADMIN ROUTES */}
+      <Route
+        path="/hospital/dashboard"
+        element={
+          <ProtectedRoute allowedRoles={['HOSPITAL_ADMIN', 'ADMIN']}>
+            <HospitalAdminDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/hospital/beds"
+        element={
+          <ProtectedRoute allowedRoles={['HOSPITAL_ADMIN', 'ADMIN', 'RECEPTIONIST']}>
+            <LiveBedManager />
+          </ProtectedRoute>
+        }
+      />
 
       {/* ADMIN ROUTES */}
       <Route

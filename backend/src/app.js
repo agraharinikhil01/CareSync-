@@ -14,6 +14,10 @@ const prescriptionRoutes = require('./routes/prescriptionRoutes');
 const bedRoutes = require('./routes/bedRoutes');
 const billRoutes = require('./routes/billRoutes');
 const aiRoutes = require('./routes/aiRoutes');
+const hospitalRoutes = require('./routes/hospitalRoutes');
+const transferRoutes = require('./routes/transferRoutes');
+const emergencyRoutes = require('./routes/emergencyRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 const app = express();
 
@@ -40,6 +44,18 @@ app.use('/auth', authRoutes);
 
 app.use('/api/admin', adminRoutes);
 app.use('/admin', adminRoutes);
+
+app.use('/api/hospitals', hospitalRoutes);
+app.use('/hospitals', hospitalRoutes);
+
+app.use('/api/transfers', transferRoutes);
+app.use('/transfers', transferRoutes);
+
+app.use('/api/emergency', emergencyRoutes);
+app.use('/emergency', emergencyRoutes);
+
+app.use('/api/notifications', notificationRoutes);
+app.use('/notifications', notificationRoutes);
 
 app.use('/api/doctors', doctorRoutes);
 app.use('/doctors', doctorRoutes);

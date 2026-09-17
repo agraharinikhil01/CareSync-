@@ -38,6 +38,9 @@ import PatientPrescriptions from './pages/patient/PatientPrescriptions';
 import PatientBills from './pages/patient/PatientBills';
 import PatientProfile from './pages/patient/PatientProfile';
 
+// ClinicOCR AI Medical Document Intelligence (Doctor, Receptionist, Patient)
+import ClinicOCR from './pages/common/ClinicOCR';
+
 const RootRedirect = () => {
   const { user, loading } = useAuth();
 
@@ -163,6 +166,14 @@ function App() {
         }
       />
       <Route
+        path="/doctor/ocr"
+        element={
+          <ProtectedRoute allowedRoles={['DOCTOR']}>
+            <ClinicOCR />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/doctor/profile"
         element={
           <ProtectedRoute allowedRoles={['DOCTOR']}>
@@ -212,6 +223,14 @@ function App() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/receptionist/ocr"
+        element={
+          <ProtectedRoute allowedRoles={['RECEPTIONIST']}>
+            <ClinicOCR />
+          </ProtectedRoute>
+        }
+      />
 
       {/* PATIENT ROUTES */}
       <Route
@@ -235,6 +254,14 @@ function App() {
         element={
           <ProtectedRoute allowedRoles={['PATIENT']}>
             <PatientPrescriptions />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/patient/ocr"
+        element={
+          <ProtectedRoute allowedRoles={['PATIENT']}>
+            <ClinicOCR />
           </ProtectedRoute>
         }
       />

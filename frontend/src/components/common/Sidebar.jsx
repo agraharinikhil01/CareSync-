@@ -17,6 +17,7 @@ import {
   Shield,
   Clock,
   Settings,
+  Scan,
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, closeSidebar, openAI }) => {
@@ -39,6 +40,7 @@ const Sidebar = ({ isOpen, closeSidebar, openAI }) => {
           { to: '/doctor/appointments', label: 'Patient Queue & OPD', icon: CalendarCheck },
           { to: '/doctor/patients', label: 'Assigned Patients', icon: Users },
           { to: '/doctor/prescriptions', label: 'Prescription Records', icon: FileText },
+          { to: '/doctor/ocr', label: 'ClinicOCR AI Scanner', icon: Scan },
           { to: '/doctor/profile', label: 'Physician Profile', icon: UserCheck },
         ];
       case 'RECEPTIONIST':
@@ -47,6 +49,7 @@ const Sidebar = ({ isOpen, closeSidebar, openAI }) => {
           { to: '/receptionist/appointments', label: 'Book & Confirm Visits', icon: CalendarCheck },
           { to: '/receptionist/beds', label: '4-Floor Bed Matrix', icon: BedDouble },
           { to: '/receptionist/patients', label: 'Patient Intake', icon: Users },
+          { to: '/receptionist/ocr', label: 'ClinicOCR Intake Scan', icon: Scan },
           { to: '/receptionist/bills', label: 'Cashier & Billing', icon: Receipt },
         ];
       case 'PATIENT':
@@ -54,6 +57,7 @@ const Sidebar = ({ isOpen, closeSidebar, openAI }) => {
           { to: '/patient/dashboard', label: 'Health Overview', icon: LayoutDashboard },
           { to: '/patient/appointments', label: 'My Consultations', icon: CalendarCheck },
           { to: '/patient/prescriptions', label: 'Prescriptions & Rx', icon: FileText },
+          { to: '/patient/ocr', label: 'ClinicOCR Rx Decoder', icon: Scan },
           { to: '/patient/bills', label: 'Invoices & Payments', icon: Receipt },
           { to: '/patient/profile', label: 'Digital Health Passport', icon: UserCheck },
         ];

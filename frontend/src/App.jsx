@@ -169,7 +169,31 @@ function App() {
         path="/doctor/ocr"
         element={
           <ProtectedRoute allowedRoles={['DOCTOR']}>
-            <ClinicOCR />
+            <ClinicOCR initialTab="dashboard" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/doctor/ocr/dashboard"
+        element={
+          <ProtectedRoute allowedRoles={['DOCTOR']}>
+            <ClinicOCR initialTab="dashboard" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/doctor/ocr/patients"
+        element={
+          <ProtectedRoute allowedRoles={['DOCTOR']}>
+            <ClinicOCR initialTab="patients" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/doctor/ocr/upload"
+        element={
+          <ProtectedRoute allowedRoles={['DOCTOR']}>
+            <ClinicOCR initialTab="upload" />
           </ProtectedRoute>
         }
       />
@@ -227,7 +251,31 @@ function App() {
         path="/receptionist/ocr"
         element={
           <ProtectedRoute allowedRoles={['RECEPTIONIST']}>
-            <ClinicOCR />
+            <ClinicOCR initialTab="dashboard" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/receptionist/ocr/dashboard"
+        element={
+          <ProtectedRoute allowedRoles={['RECEPTIONIST']}>
+            <ClinicOCR initialTab="dashboard" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/receptionist/ocr/patients"
+        element={
+          <ProtectedRoute allowedRoles={['RECEPTIONIST']}>
+            <ClinicOCR initialTab="patients" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/receptionist/ocr/upload"
+        element={
+          <ProtectedRoute allowedRoles={['RECEPTIONIST']}>
+            <ClinicOCR initialTab="upload" />
           </ProtectedRoute>
         }
       />
@@ -261,7 +309,31 @@ function App() {
         path="/patient/ocr"
         element={
           <ProtectedRoute allowedRoles={['PATIENT']}>
-            <ClinicOCR />
+            <ClinicOCR initialTab="dashboard" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/patient/ocr/dashboard"
+        element={
+          <ProtectedRoute allowedRoles={['PATIENT']}>
+            <ClinicOCR initialTab="dashboard" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/patient/ocr/patients"
+        element={
+          <ProtectedRoute allowedRoles={['PATIENT']}>
+            <ClinicOCR initialTab="patients" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/patient/ocr/upload"
+        element={
+          <ProtectedRoute allowedRoles={['PATIENT']}>
+            <ClinicOCR initialTab="upload" />
           </ProtectedRoute>
         }
       />

@@ -1,5 +1,5 @@
-import React from 'react';
-import { NavLink } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
   LayoutDashboard,
@@ -17,11 +17,26 @@ import {
   Shield,
   Clock,
   Settings,
-  Scan,
+  LayoutGrid,
+  Upload,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, closeSidebar, openAI }) => {
   const { user, logout } = useAuth();
+  const location = useLocation();
+
+  const isEligibleForOcr = ['DOCTOR', 'RECEPTIONIST', 'PATIENT'].includes(user?.role);
+  const ocrRolePath = user?.role === 'DOCTOR' ? 'doctor' : user?.role === 'RECEPTIONIST' ? 'receptionist' : 'patient';
+
+  // Keep ClinicOCR open if currently on any OCR route, default to open for visibility
+  const isOcrRoute = location.pathname.includes('/ocr');
+  const [ocrOpen, setOcrOpen] = useState(true);
+
+  useEffect(() => {
+    if (isOcrRoute) setOcrOpen(true);
+  }, [location.pathname]);
 
   const getLinks = () => {
     switch (user?.role) {
@@ -40,7 +55,6 @@ const Sidebar = ({ isOpen, closeSidebar, openAI }) => {
           { to: '/doctor/appointments', label: 'Patient Queue & OPD', icon: CalendarCheck },
           { to: '/doctor/patients', label: 'Assigned Patients', icon: Users },
           { to: '/doctor/prescriptions', label: 'Prescription Records', icon: FileText },
-          { to: '/doctor/ocr', label: 'ClinicOCR AI Scanner', icon: Scan },
           { to: '/doctor/profile', label: 'Physician Profile', icon: UserCheck },
         ];
       case 'RECEPTIONIST':
@@ -49,7 +63,6 @@ const Sidebar = ({ isOpen, closeSidebar, openAI }) => {
           { to: '/receptionist/appointments', label: 'Book & Confirm Visits', icon: CalendarCheck },
           { to: '/receptionist/beds', label: '4-Floor Bed Matrix', icon: BedDouble },
           { to: '/receptionist/patients', label: 'Patient Intake', icon: Users },
-          { to: '/receptionist/ocr', label: 'ClinicOCR Intake Scan', icon: Scan },
           { to: '/receptionist/bills', label: 'Cashier & Billing', icon: Receipt },
         ];
       case 'PATIENT':
@@ -57,7 +70,6 @@ const Sidebar = ({ isOpen, closeSidebar, openAI }) => {
           { to: '/patient/dashboard', label: 'Health Overview', icon: LayoutDashboard },
           { to: '/patient/appointments', label: 'My Consultations', icon: CalendarCheck },
           { to: '/patient/prescriptions', label: 'Prescriptions & Rx', icon: FileText },
-          { to: '/patient/ocr', label: 'ClinicOCR Rx Decoder', icon: Scan },
           { to: '/patient/bills', label: 'Invoices & Payments', icon: Receipt },
           { to: '/patient/profile', label: 'Digital Health Passport', icon: UserCheck },
         ];
@@ -154,6 +166,94 @@ const Sidebar = ({ isOpen, closeSidebar, openAI }) => {
                 </NavLink>
               );
             })}
+
+            {/* ClinicOCR Expandable Section (Doctor, Receptionist, Patient ONLY) */}
+            {isEligibleForOcr && (
+              <div className="pt-2">
+                <div className="rounded-2xl bg-[#090f20] border border-slate-800/80 p-2 text-white shadow-lg shadow-sky-950/20">
+                  {/* Header Toggle */}
+                  <button
+                    type="button"
+                    onClick={() => setOcrOpen(!ocrOpen)}
+                    className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-slate-800/70 transition-colors cursor-pointer group text-left"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-white text-slate-900 flex items-center justify-center shadow-xs shrink-0">
+                        <Stethoscope className="w-4.5 h-4.5 text-slate-900" />
+                      </div>
+                      <div>
+                        <span className="font-extrabold text-sm tracking-tight text-white group-hover:text-sky-300 transition-colors block leading-tight">
+                          ClinicOCR
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-medium leading-none">
+                          Medical Document AI
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-slate-400 pl-2">
+                      {ocrOpen ? (
+                        <ChevronDown className="w-4 h-4 text-slate-400 group-hover:text-white transition-colors" />
+                      ) : (
+                        <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-white transition-colors" />
+                      )}
+                    </div>
+                  </button>
+
+                  {/* 3 Sub-items (Dashboard, Patients, Upload Prescription) */}
+                  {ocrOpen && (
+                    <div className="mt-1 space-y-1 pt-1.5 border-t border-slate-800/80">
+                      {/* 1. Dashboard */}
+                      <NavLink
+                        to={`/${ocrRolePath}/ocr/dashboard`}
+                        onClick={closeSidebar}
+                        className={({ isActive }) =>
+                          `flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                            isActive
+                              ? 'bg-slate-800/90 text-white shadow-xs'
+                              : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+                          }`
+                        }
+                      >
+                        <LayoutGrid className="w-4 h-4 text-[#00d2ff] shrink-0" />
+                        <span>Dashboard</span>
+                      </NavLink>
+
+                      {/* 2. Patients */}
+                      <NavLink
+                        to={`/${ocrRolePath}/ocr/patients`}
+                        onClick={closeSidebar}
+                        className={({ isActive }) =>
+                          `flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                            isActive
+                              ? 'bg-slate-800/90 text-white shadow-xs'
+                              : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+                          }`
+                        }
+                      >
+                        <Users className="w-4 h-4 text-[#a855f7] shrink-0" />
+                        <span>Patients</span>
+                      </NavLink>
+
+                      {/* 3. Upload Prescription */}
+                      <NavLink
+                        to={`/${ocrRolePath}/ocr/upload`}
+                        onClick={closeSidebar}
+                        className={({ isActive }) =>
+                          `flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                            isActive
+                              ? 'bg-slate-800/90 text-white shadow-xs'
+                              : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+                          }`
+                        }
+                      >
+                        <Upload className="w-4 h-4 text-[#ec4899] shrink-0" />
+                        <span>Upload Prescription</span>
+                      </NavLink>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </nav>
 
           {/* AI Clinical Assistant Widget in Sidebar */}

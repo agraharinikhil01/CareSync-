@@ -8,34 +8,19 @@ const getPatients = async (req, res) => {
     const { search, gender, bloodGroup } = req.query;
     let query = {};
 
-    if (req.user.role === 'PATIENT') {
-      let patient = await Patient.findOne({ user: req.user._id }).populate('user', 'name email phone profileImage createdAt');
-      if (!patient) {
-        const patientId = `PAT-${Date.now().toString().slice(-6)}`;
-        const qrCode = (await generatePatientIdQR(patientId, req.user.name)) || '';
-        patient = await Patient.create({
-          user: req.user._id,
-          patientId,
-          qrCode,
-        });
-        await patient.populate('user', 'name email phone profileImage createdAt');
-      }
-      return res.json({ success: true, data: [patient] });
-    }
-
-    if (search) {
+    if (search && search.trim()) {
+      const cleanSearch = search.trim();
       const userMatches = await User.find({
-        role: 'PATIENT',
         $or: [
-          { name: { $regex: search, $options: 'i' } },
-          { email: { $regex: search, $options: 'i' } },
-          { phone: { $regex: search, $options: 'i' } },
+          { name: { $regex: cleanSearch, $options: 'i' } },
+          { email: { $regex: cleanSearch, $options: 'i' } },
+          { phone: { $regex: cleanSearch, $options: 'i' } },
         ],
       }).select('_id');
 
       query.$or = [
         { user: { $in: userMatches.map((u) => u._id) } },
-        { patientId: { $regex: search, $options: 'i' } },
+        { patientId: { $regex: cleanSearch, $options: 'i' } },
       ];
     }
 

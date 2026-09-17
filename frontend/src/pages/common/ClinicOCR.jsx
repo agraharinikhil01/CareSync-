@@ -78,6 +78,7 @@ const ClinicOCR = ({ initialTab = 'dashboard' }) => {
   const [aiResult, setAiResult] = useState(null);
   const [confidence, setConfidence] = useState(0);
   const [selectedPatient, setSelectedPatient] = useState(user?.role === 'PATIENT' ? user?._id || '' : '');
+  const [uploadPatientSearch, setUploadPatientSearch] = useState('');
   const [savingToEmr, setSavingToEmr] = useState(false);
   const [copied, setCopied] = useState(false);
   const [selectedRxDetail, setSelectedRxDetail] = useState(null);
@@ -415,13 +416,45 @@ ${aiResult.precautions?.join(', ') || ''}`;
     }
   };
 
-  // Filter patients by search
+  // Live Backend Search on searchQuery change
+  useEffect(() => {
+    const delay = setTimeout(() => {
+      if (searchQuery && searchQuery.trim()) {
+        api
+          .get(`/patients?search=${encodeURIComponent(searchQuery.trim())}`)
+          .then((res) => {
+            if (res.data?.success && Array.isArray(res.data.data)) {
+              setPatients((prev) => {
+                const map = new Map();
+                prev.forEach((p) => map.set(p._id, p));
+                res.data.data.forEach((p) => map.set(p._id, p));
+                return Array.from(map.values());
+              });
+            }
+          })
+          .catch(() => {});
+      }
+    }, 300);
+
+    return () => clearTimeout(delay);
+  }, [searchQuery]);
+
+  // Filter patients by search query across all clinical fields
   const filteredPatients = patients.filter((p) => {
+    if (!searchQuery || !searchQuery.trim()) return true;
+    const q = searchQuery.trim().toLowerCase();
     const name = (p.user?.name || p.name || '').toLowerCase();
+    const email = (p.user?.email || p.email || '').toLowerCase();
     const phone = (p.phone || p.user?.phone || '').toLowerCase();
-    const pid = (p.patientId || '').toLowerCase();
-    const q = searchQuery.toLowerCase();
-    return name.includes(q) || phone.includes(q) || pid.includes(q);
+    const pid = (p.patientId || p._id || '').toLowerCase();
+    const blood = (p.bloodGroup || '').toLowerCase();
+    return (
+      name.includes(q) ||
+      email.includes(q) ||
+      phone.includes(q) ||
+      pid.includes(q) ||
+      blood.includes(q)
+    );
   });
 
   return (
@@ -780,43 +813,155 @@ ${aiResult.precautions?.join(', ') || ''}`;
             {/* LEFT: Upload Box & OCR Raw View */}
             <div className="lg:col-span-5 space-y-5">
               {/* Patient Selector (For Doctor/Receptionist/Patient) */}
-              {user?.role === 'PATIENT' ? (
-                <div className="bg-sky-50/70 border border-sky-200/80 rounded-2xl p-4 flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-sky-600 text-white flex items-center justify-center font-bold text-sm shrink-0">
-                    <User className="w-4 h-4" />
+              {(() => {
+                const selectedPatientObj = patients.find(
+                  (p) => p._id === selectedPatient || p.user?._id === selectedPatient || p.user === selectedPatient
+                );
+
+                if (selectedPatient && selectedPatientObj) {
+                  return (
+                    <div className="bg-sky-50/70 border border-sky-200/80 rounded-2xl p-4 shadow-xs space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-sky-700 bg-white border border-sky-200/80 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                          <User className="w-3 h-3 text-sky-600" /> Target Patient Chart Selected
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedPatient('')}
+                          className="text-xs text-sky-700 hover:text-sky-900 font-bold underline cursor-pointer"
+                        >
+                          Change / Switch Patient
+                        </button>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-3 bg-white p-3 rounded-xl border border-sky-100">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-10 h-10 rounded-xl bg-sky-600 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
+                            {(selectedPatientObj.user?.name || selectedPatientObj.name || 'P')[0].toUpperCase()}
+                          </div>
+                          <div className="min-w-0">
+                            <h4 className="font-bold text-sm text-slate-900 truncate">
+                              {selectedPatientObj.user?.name || selectedPatientObj.name}
+                            </h4>
+                            <p className="text-[11px] text-slate-500 truncate">
+                              ID: {selectedPatientObj.patientId || selectedPatientObj._id?.slice(-6)} • {selectedPatientObj.phone || selectedPatientObj.user?.phone || 'No phone'} • {selectedPatientObj.bloodGroup || 'O+'}
+                            </p>
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-bold px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                          Ready to Attach
+                        </span>
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                        <User className="w-3.5 h-3.5 text-sky-600" />
+                        Target Patient Chart <span className="text-rose-500">*</span>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setShowAddPatientModal(true)}
+                        className="text-xs text-sky-600 hover:text-sky-800 font-bold flex items-center gap-1 cursor-pointer"
+                      >
+                        <Plus className="w-3.5 h-3.5" /> New Patient
+                      </button>
+                    </div>
+
+                    {/* Quick Search Box for Patients */}
+                    <div className="relative">
+                      <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <input
+                        type="text"
+                        placeholder="Search patient by name, ID or phone..."
+                        value={uploadPatientSearch}
+                        onChange={(e) => setUploadPatientSearch(e.target.value)}
+                        className="w-full pl-9 pr-3.5 py-2 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 rounded-xl border border-slate-200 bg-slate-50/60"
+                      />
+                    </div>
+
+                    {/* Patient Dropdown Select */}
+                    <div>
+                      <select
+                        value={selectedPatient}
+                        onChange={(e) => setSelectedPatient(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 cursor-pointer"
+                      >
+                        <option value="">-- Choose Patient from List ({patients.length} available) --</option>
+                        {patients.map((p) => (
+                          <option key={p._id} value={p._id}>
+                            {p.user?.name || p.name} (ID: {p.patientId || p._id.slice(-6)}) - {p.phone || p.user?.phone || 'No phone'}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Filtered Search Results Dropdown preview when typing */}
+                    {uploadPatientSearch.trim() && (
+                      <div className="max-h-40 overflow-y-auto rounded-xl border border-sky-200 divide-y divide-slate-100 bg-sky-50/40">
+                        {patients
+                          .filter((p) => {
+                            const q = uploadPatientSearch.trim().toLowerCase();
+                            const name = (p.user?.name || p.name || '').toLowerCase();
+                            const email = (p.user?.email || p.email || '').toLowerCase();
+                            const phone = (p.phone || p.user?.phone || '').toLowerCase();
+                            const pid = (p.patientId || p._id || '').toLowerCase();
+                            return name.includes(q) || email.includes(q) || phone.includes(q) || pid.includes(q);
+                          })
+                          .slice(0, 6)
+                          .map((p) => (
+                            <button
+                              key={p._id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedPatient(p._id);
+                                setUploadPatientSearch('');
+                                toast.success(`Selected: ${p.user?.name || p.name}`);
+                              }}
+                              className="w-full px-3 py-2 text-left hover:bg-sky-100/80 flex items-center justify-between transition-colors cursor-pointer"
+                            >
+                              <div className="min-w-0">
+                                <p className="text-xs font-bold text-slate-800 truncate">
+                                  {p.user?.name || p.name}
+                                </p>
+                                <p className="text-[10px] text-slate-500 truncate">
+                                  ID: {p.patientId || p._id.slice(-6)} • {p.phone || p.user?.phone || 'No phone'}
+                                </p>
+                              </div>
+                              <span className="text-[10px] font-bold text-sky-700 bg-white border border-sky-300 px-2 py-0.5 rounded-md shrink-0 ml-2">
+                                Select
+                              </span>
+                            </button>
+                          ))}
+                      </div>
+                    )}
+
+                    {/* Quick Button for Patient to select themselves */}
+                    {user?.role === 'PATIENT' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const myPatient = patients.find((p) => p.user?._id === user?._id || p.user === user?._id);
+                          if (myPatient) {
+                            setSelectedPatient(myPatient._id);
+                          } else {
+                            setSelectedPatient(user?._id || '');
+                          }
+                          toast.success(`Selected your profile: ${user?.name}`);
+                        }}
+                        className="w-full py-2 px-3 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-sky-200/60"
+                      >
+                        <User className="w-3.5 h-3.5 text-sky-600" />
+                        <span>Use My Own Medical Profile ({user?.name})</span>
+                      </button>
+                    )}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-slate-800 truncate">
-                      Linking to Your Medical Profile
-                    </p>
-                    <p className="text-[11px] text-slate-500 truncate">
-                      Patient: <span className="font-semibold text-slate-700">{user?.name}</span> ({user?.email})
-                    </p>
-                  </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white border border-sky-200 text-sky-700 shrink-0">
-                    Auto-Linked
-                  </span>
-                </div>
-              ) : (
-                <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm space-y-2">
-                  <label className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
-                    <User className="w-3.5 h-3.5 text-sky-600" />
-                    Target Patient Chart
-                  </label>
-                  <select
-                    value={selectedPatient}
-                    onChange={(e) => setSelectedPatient(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500"
-                  >
-                    <option value="">-- Choose Patient to Link Digitized Record --</option>
-                    {patients.map((p) => (
-                      <option key={p._id} value={p._id}>
-                        {p.user?.name || p.name} (ID: {p.patientId || p._id.slice(-6)})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Upload Card */}
               <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-4">

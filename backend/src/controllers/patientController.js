@@ -2,11 +2,26 @@ const User = require('../models/User');
 const Patient = require('../models/Patient');
 const { generatePatientIdQR } = require('../services/qrService');
 
-// GET /api/patients (Admin, Doctor, Receptionist)
+// GET /api/patients (Admin, Doctor, Receptionist, Patient)
 const getPatients = async (req, res) => {
   try {
     const { search, gender, bloodGroup } = req.query;
     let query = {};
+
+    if (req.user.role === 'PATIENT') {
+      let patient = await Patient.findOne({ user: req.user._id }).populate('user', 'name email phone profileImage createdAt');
+      if (!patient) {
+        const patientId = `PAT-${Date.now().toString().slice(-6)}`;
+        const qrCode = (await generatePatientIdQR(patientId, req.user.name)) || '';
+        patient = await Patient.create({
+          user: req.user._id,
+          patientId,
+          qrCode,
+        });
+        await patient.populate('user', 'name email phone profileImage createdAt');
+      }
+      return res.json({ success: true, data: [patient] });
+    }
 
     if (search) {
       const userMatches = await User.find({

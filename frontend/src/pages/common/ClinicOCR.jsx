@@ -31,6 +31,9 @@ import {
   Plus,
   ArrowRight,
   TrendingUp,
+  Trash2,
+  X,
+  UserPlus,
 } from 'lucide-react';
 
 const ClinicOCR = ({ initialTab = 'dashboard' }) => {
@@ -78,6 +81,73 @@ const ClinicOCR = ({ initialTab = 'dashboard' }) => {
   const [savingToEmr, setSavingToEmr] = useState(false);
   const [copied, setCopied] = useState(false);
   const [selectedRxDetail, setSelectedRxDetail] = useState(null);
+
+  // Add & Remove Patient State
+  const [showAddPatientModal, setShowAddPatientModal] = useState(false);
+  const [submittingPatient, setSubmittingPatient] = useState(false);
+  const [patientForm, setPatientForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    gender: 'Male',
+    bloodGroup: 'O+',
+    dob: '',
+    address: '',
+    allergies: '',
+  });
+
+  const handleCreatePatient = async (e) => {
+    e.preventDefault();
+    if (!patientForm.name.trim() || !patientForm.email.trim()) {
+      toast.error('Patient Name and Email are required');
+      return;
+    }
+
+    try {
+      setSubmittingPatient(true);
+      const res = await api.post('/patients', patientForm);
+      if (res.data.success) {
+        toast.success(`Patient "${patientForm.name}" registered successfully!`);
+        setShowAddPatientModal(false);
+        setPatientForm({
+          name: '',
+          email: '',
+          phone: '',
+          gender: 'Male',
+          bloodGroup: 'O+',
+          dob: '',
+          address: '',
+          allergies: '',
+        });
+        await fetchInitialData();
+      } else {
+        toast.error(res.data.message || 'Failed to add patient');
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Error creating patient');
+    } finally {
+      setSubmittingPatient(false);
+    }
+  };
+
+  const handleDeletePatient = async (patientId, patientName) => {
+    if (!window.confirm(`Are you sure you want to remove ${patientName || 'this patient'}? This will permanently delete the patient chart.`)) {
+      return;
+    }
+
+    try {
+      const res = await api.delete(`/patients/${patientId}`);
+      if (res.data.success) {
+        toast.success(`Patient removed successfully`);
+        setPatients((prev) => prev.filter((p) => p._id !== patientId));
+        if (selectedPatient === patientId) setSelectedPatient('');
+      } else {
+        toast.error(res.data.message || 'Failed to remove patient');
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Error removing patient');
+    }
+  };
 
   useEffect(() => {
     if (user?.role === 'PATIENT' && user?._id) {
@@ -580,72 +650,127 @@ ${aiResult.precautions?.join(', ') || ''}`;
           <div className="space-y-5">
             <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h2 className="text-base font-bold text-slate-900">ClinicOCR Patient Directory</h2>
-                <p className="text-xs text-slate-400">Select any patient to scan, attach, or view their prescription records</p>
+                <h2 className="text-base font-bold text-slate-900">
+                  {user?.role === 'PATIENT' ? 'ClinicOCR Personal Health File' : 'ClinicOCR Patient Directory'}
+                </h2>
+                <p className="text-xs text-slate-400">
+                  {user?.role === 'PATIENT'
+                    ? 'Your verified medical profile and attached prescription history'
+                    : 'Manage patient charts, register new patients, or link prescriptions'}
+                </p>
               </div>
-              <div className="relative w-full sm:w-72">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="Search by name, ID or phone..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 bg-slate-50/60"
-                />
+
+              <div className="flex items-center gap-2.5 w-full sm:w-auto">
+                <div className="relative flex-1 sm:w-64">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Search by name, ID or phone..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 bg-slate-50/60"
+                  />
+                </div>
+
+                {user?.role !== 'PATIENT' && (
+                  <button
+                    onClick={() => setShowAddPatientModal(true)}
+                    className="px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer shrink-0"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Add Patient</span>
+                  </button>
+                )}
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredPatients.map((p) => {
-                const patientRxCount = prescriptions.filter(
-                  (rx) => rx.patient?._id === p._id || rx.patient === p._id
-                ).length;
-
-                return (
-                  <div
-                    key={p._id}
-                    className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm hover:shadow-md hover:border-sky-300 transition-all flex flex-col justify-between"
+            {filteredPatients.length === 0 ? (
+              <div className="py-12 text-center bg-white rounded-2xl border border-slate-200/80 p-6">
+                <Users className="w-10 h-10 mx-auto text-slate-300 mb-2" />
+                <p className="text-sm font-semibold text-slate-700">No patients found</p>
+                <p className="text-xs text-slate-400 mt-1">
+                  {user?.role !== 'PATIENT'
+                    ? 'Click "+ Add Patient" above to register a new patient chart.'
+                    : 'Your patient profile is being initialized.'}
+                </p>
+                {user?.role !== 'PATIENT' && (
+                  <button
+                    onClick={() => setShowAddPatientModal(true)}
+                    className="mt-3 px-4 py-2 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 text-xs font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer"
                   >
-                    <div>
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-sky-100 text-sky-700 font-bold flex items-center justify-center shrink-0">
-                            {(p.user?.name || p.name || 'P')[0].toUpperCase()}
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add First Patient</span>
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredPatients.map((p) => {
+                  const patientRxCount = prescriptions.filter(
+                    (rx) => rx.patient?._id === p._id || rx.patient === p._id
+                  ).length;
+
+                  return (
+                    <div
+                      key={p._id}
+                      className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm hover:shadow-md hover:border-sky-300 transition-all flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-sky-100 text-sky-700 font-bold flex items-center justify-center shrink-0">
+                              {(p.user?.name || p.name || 'P')[0].toUpperCase()}
+                            </div>
+                            <div>
+                              <h3 className="font-bold text-sm text-slate-900">{p.user?.name || p.name}</h3>
+                              <p className="text-xs text-slate-400">
+                                ID: {p.patientId || p._id.slice(-6)} • {p.age ? `${p.age} yrs` : ''} {p.gender || ''}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <h3 className="font-bold text-sm text-slate-900">{p.user?.name || p.name}</h3>
-                            <p className="text-xs text-slate-400">
-                              ID: {p.patientId || p._id.slice(-6)} • {p.age ? `${p.age} yrs` : ''} {p.gender || ''}
-                            </p>
+
+                          <div className="flex items-center gap-1.5">
+                            <span className="px-2.5 py-1 rounded-full bg-sky-50 text-sky-700 text-[11px] font-bold border border-sky-100">
+                              {patientRxCount} Rx
+                            </span>
+                            {user?.role !== 'PATIENT' && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeletePatient(p._id, p.user?.name || p.name);
+                                }}
+                                title="Remove Patient"
+                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
                           </div>
                         </div>
-                        <span className="px-2.5 py-1 rounded-full bg-sky-50 text-sky-700 text-[11px] font-bold border border-sky-100">
-                          {patientRxCount} Rx
-                        </span>
+
+                        <div className="mt-4 pt-3 border-t border-slate-100 space-y-1 text-xs text-slate-500">
+                          <p>Phone: {p.phone || p.user?.phone || 'Not registered'}</p>
+                          <p>Blood Group: {p.bloodGroup || 'O+'}</p>
+                        </div>
                       </div>
 
-                      <div className="mt-4 pt-3 border-t border-slate-100 space-y-1 text-xs text-slate-500">
-                        <p>Phone: {p.phone || p.user?.phone || 'Not registered'}</p>
-                        <p>Blood Group: {p.bloodGroup || 'O+'}</p>
-                      </div>
+                      <button
+                        onClick={() => {
+                          setSelectedPatient(p._id);
+                          switchTab('upload');
+                          toast.success(`Selected patient: ${p.user?.name || p.name}`);
+                        }}
+                        className="mt-4 w-full py-2 px-3 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 font-bold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                      >
+                        <Scan className="w-3.5 h-3.5" />
+                        <span>Scan Prescription for Patient</span>
+                        <ArrowRight className="w-3.5 h-3.5 ml-auto" />
+                      </button>
                     </div>
-
-                    <button
-                      onClick={() => {
-                        setSelectedPatient(p._id);
-                        switchTab('upload');
-                        toast.success(`Selected patient: ${p.user?.name || p.name}`);
-                      }}
-                      className="mt-4 w-full py-2 px-3 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 font-bold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
-                    >
-                      <Scan className="w-3.5 h-3.5" />
-                      <span>Scan Prescription for Patient</span>
-                      <ArrowRight className="w-3.5 h-3.5 ml-auto" />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
@@ -1094,6 +1219,155 @@ ${aiResult.precautions?.join(', ') || ''}`;
               >
                 Close
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Add Patient Modal */}
+        {showAddPatientModal && (
+          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+            <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto shadow-2xl animate-in zoom-in-95 duration-150 border border-slate-100">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center font-bold">
+                    <UserPlus className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-base text-slate-900">Add New Patient</h3>
+                    <p className="text-xs text-slate-400">Register a new patient into CareSync ClinicOCR</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAddPatientModal(false)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleCreatePatient} className="space-y-3.5">
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">
+                    Full Name <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. John Doe"
+                    value={patientForm.name}
+                    onChange={(e) => setPatientForm({ ...patientForm, name: e.target.value })}
+                    className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 bg-slate-50/50"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 block mb-1">
+                      Email Address <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      placeholder="e.g. patient@example.com"
+                      value={patientForm.email}
+                      onChange={(e) => setPatientForm({ ...patientForm, email: e.target.value })}
+                      className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 bg-slate-50/50"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 block mb-1">Phone Number</label>
+                    <input
+                      type="tel"
+                      placeholder="e.g. +91 98765 43210"
+                      value={patientForm.phone}
+                      onChange={(e) => setPatientForm({ ...patientForm, phone: e.target.value })}
+                      className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 bg-slate-50/50"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 block mb-1">Gender</label>
+                    <select
+                      value={patientForm.gender}
+                      onChange={(e) => setPatientForm({ ...patientForm, gender: e.target.value })}
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white"
+                    >
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 block mb-1">Blood Group</label>
+                    <select
+                      value={patientForm.bloodGroup}
+                      onChange={(e) => setPatientForm({ ...patientForm, bloodGroup: e.target.value })}
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white"
+                    >
+                      <option value="O+">O+</option>
+                      <option value="O-">O-</option>
+                      <option value="A+">A+</option>
+                      <option value="A-">A-</option>
+                      <option value="B+">B+</option>
+                      <option value="B-">B-</option>
+                      <option value="AB+">AB+</option>
+                      <option value="AB-">AB-</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 block mb-1">Date of Birth</label>
+                    <input
+                      type="date"
+                      value={patientForm.dob}
+                      onChange={(e) => setPatientForm({ ...patientForm, dob: e.target.value })}
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Known Allergies (if any)</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Penicillin, Peanuts, Sulfa drugs"
+                    value={patientForm.allergies}
+                    onChange={(e) => setPatientForm({ ...patientForm, allergies: e.target.value })}
+                    className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 bg-slate-50/50"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Address</label>
+                  <input
+                    type="text"
+                    placeholder="City, State, Pin Code"
+                    value={patientForm.address}
+                    onChange={(e) => setPatientForm({ ...patientForm, address: e.target.value })}
+                    className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 bg-slate-50/50"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddPatientModal(false)}
+                    className="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submittingPatient}
+                    className="px-5 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold shadow-sm cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                  >
+                    {submittingPatient ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                    <span>{submittingPatient ? 'Registering...' : 'Register Patient'}</span>
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}

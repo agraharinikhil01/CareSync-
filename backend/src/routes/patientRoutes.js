@@ -14,10 +14,10 @@ const { authorize } = require('../middleware/roleMiddleware');
 router.use(protect);
 
 router.get('/me/profile', authorize('PATIENT'), getMyPatientProfile);
-router.get('/', authorize('ADMIN', 'DOCTOR', 'RECEPTIONIST'), getPatients);
-router.post('/', authorize('ADMIN'), createPatient);
+router.get('/', authorize('ADMIN', 'DOCTOR', 'RECEPTIONIST', 'PATIENT'), getPatients);
+router.post('/', authorize('ADMIN', 'DOCTOR', 'RECEPTIONIST'), createPatient);
 router.get('/:id', getPatientById);
 router.put('/:id', updatePatient);
-router.delete('/:id', authorize('ADMIN'), deletePatient);
+router.delete('/:id', authorize('ADMIN', 'DOCTOR', 'RECEPTIONIST'), deletePatient);
 
 module.exports = router;

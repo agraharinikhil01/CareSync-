@@ -10,6 +10,7 @@ const DoctorPrescriptions = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [qrModal, setQrModal] = useState(null);
+  const [imageModal, setImageModal] = useState(null);
   const [search, setSearch] = useState('');
 
   const [form, setForm] = useState({
@@ -236,7 +237,14 @@ const DoctorPrescriptions = () => {
                         <div className="text-[11px] text-slate-500">{rx.patient?.email}</div>
                       </td>
                       <td className="py-3.5 px-5">
-                        <div className="font-semibold text-sky-800">{rx.diagnosis}</div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-semibold text-sky-800">{rx.diagnosis}</span>
+                          {rx.source === 'ClinicOCR' && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-teal-50 text-teal-700 border border-teal-200">
+                              ClinicOCR
+                            </span>
+                          )}
+                        </div>
                         {rx.symptoms && rx.symptoms.length > 0 && (
                           <div className="text-[11px] text-slate-500 truncate max-w-xs mt-0.5">
                             Symptoms: {rx.symptoms.join(', ')}
@@ -266,14 +274,26 @@ const DoctorPrescriptions = () => {
                           <span className="text-xs text-slate-400">N/A</span>
                         )}
                       </td>
-                      <td className="py-3.5 px-5 text-right">
-                        <button
-                          onClick={() => handleDownloadPDF(rx._id)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs rounded-lg transition-colors cursor-pointer"
-                        >
-                          <Download className="w-3.5 h-3.5 text-sky-600" />
-                          Download PDF
-                        </button>
+                      <td className="py-3.5 px-5 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {rx.scannedImage && (
+                            <button
+                              onClick={() => setImageModal(rx)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-teal-50 hover:bg-teal-100 text-teal-800 font-semibold text-xs rounded-lg transition-colors border border-teal-200/70 cursor-pointer"
+                              title="View Scanned Prescription"
+                            >
+                              <FileText className="w-3.5 h-3.5 text-teal-600" />
+                              <span>Scanned Rx</span>
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleDownloadPDF(rx._id)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs rounded-lg transition-colors cursor-pointer"
+                          >
+                            <Download className="w-3.5 h-3.5 text-sky-600" />
+                            Download PDF
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -508,6 +528,60 @@ const DoctorPrescriptions = () => {
               >
                 Close Window
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Scanned Document Image Modal */}
+        {imageModal && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
+            <div className="bg-white rounded-3xl border border-slate-200/80 shadow-2xl w-full max-w-xl p-6 space-y-4 max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-150">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center font-bold">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-base text-slate-900">
+                      Original Scanned Prescription
+                    </h3>
+                    <p className="text-xs text-slate-400">
+                      Patient: {imageModal.patient?.name} · Rx #{imageModal._id.substring(imageModal._id.length - 8).toUpperCase()}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setImageModal(null)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="rounded-2xl overflow-hidden bg-slate-900 border border-slate-200 flex items-center justify-center max-h-[65vh]">
+                <img
+                  src={imageModal.scannedImage}
+                  alt="Scanned Prescription Document"
+                  className="max-h-[65vh] w-auto object-contain"
+                />
+              </div>
+
+              <div className="flex items-center justify-between pt-2">
+                <a
+                  href={imageModal.scannedImage}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 bg-sky-50 text-sky-700 hover:bg-sky-100 font-semibold text-xs rounded-xl transition-colors"
+                >
+                  Open Full Resolution
+                </a>
+                <button
+                  onClick={() => setImageModal(null)}
+                  className="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition-colors cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         )}

@@ -74,14 +74,17 @@ const ClinicOCR = ({ initialTab = 'dashboard' }) => {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState(null);
   const [confidence, setConfidence] = useState(0);
-  const [selectedPatient, setSelectedPatient] = useState('');
+  const [selectedPatient, setSelectedPatient] = useState(user?.role === 'PATIENT' ? user?._id || '' : '');
   const [savingToEmr, setSavingToEmr] = useState(false);
   const [copied, setCopied] = useState(false);
   const [selectedRxDetail, setSelectedRxDetail] = useState(null);
 
   useEffect(() => {
+    if (user?.role === 'PATIENT' && user?._id) {
+      setSelectedPatient(user._id);
+    }
     fetchInitialData();
-  }, [user?.role]);
+  }, [user?.role, user?._id]);
 
   const fetchInitialData = async () => {
     try {
@@ -294,39 +297,46 @@ ${aiResult.precautions?.join(', ') || ''}`;
   };
 
   const handleSaveToEmr = async () => {
-    if (!selectedPatient) {
+    const targetPatientId = user?.role === 'PATIENT' ? user?._id : selectedPatient;
+    if (!targetPatientId) {
       toast.error('Please select a patient to link this prescription');
       return;
     }
     if (!aiResult?.medicines?.length) {
-      toast.error('No medicines to save');
+      toast.error('No medicines found in extracted prescription');
       return;
     }
 
     try {
       setSavingToEmr(true);
       const payload = {
-        patient: selectedPatient,
-        diagnosis: aiResult.tags?.join(', ') || 'Prescription Intake Digitized',
-        symptoms: aiResult.summary || 'Digitized via ClinicOCR',
-        advice: aiResult.precautions?.join('. ') || 'Follow medicine dosage properly.',
+        patient: targetPatientId,
+        diagnosis: aiResult.tags?.length ? aiResult.tags.join(', ') : 'Digitized Clinical Prescription',
+        symptoms: aiResult.summary ? [aiResult.summary] : ['Digitized via ClinicOCR'],
+        advice: aiResult.precautions?.join('. ') || 'Follow medicine dosage properly as prescribed.',
         medicines: aiResult.medicines.map((m) => ({
-          name: m.name,
+          name: m.name || 'Prescription Item',
           dosage: m.dosage || 'As directed',
           frequency: m.frequency || 'Daily',
           duration: m.duration || '5 days',
           instructions: m.instructions || 'After meals',
         })),
+        scannedImage: imagePreview || '',
+        source: 'ClinicOCR',
       };
 
       const res = await api.post('/prescriptions', payload);
       if (res.data.success) {
-        toast.success('Prescription officially saved into CareSync Patient EMR!');
-        fetchInitialData();
-        // Switch to dashboard or patients tab
+        toast.success(
+          user?.role === 'PATIENT'
+            ? 'Prescription saved to your CareSync Health Records!'
+            : 'Prescription officially saved into CareSync Patient EMR!'
+        );
+        await fetchInitialData();
+        // Switch to dashboard tab to view the newly saved prescription
         switchTab('dashboard');
       } else {
-        toast.error(res.data.message || 'Failed to save to EMR');
+        toast.error(res.data.message || 'Failed to save prescription');
       }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Error saving prescription');
@@ -348,66 +358,65 @@ ${aiResult.precautions?.join(', ') || ''}`;
     <DashboardLayout title="ClinicOCR">
       <div className="space-y-6">
         {/* Top Header Hero & Tab Bar */}
-        <div className="bg-[#0b1329] rounded-3xl p-6 sm:p-8 text-white shadow-xl shadow-sky-950/20 relative overflow-hidden border border-slate-800">
-          <div className="absolute right-0 top-0 translate-x-8 -translate-y-8 w-72 h-72 bg-sky-500/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-7 shadow-xs relative overflow-hidden">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 relative z-10">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-white text-sky-900 flex items-center justify-center shadow-lg shadow-sky-500/20 shrink-0">
-                <Stethoscope className="w-8 h-8" />
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-sky-600 to-teal-500 text-white flex items-center justify-center shadow-md shadow-sky-500/20 shrink-0">
+                <Stethoscope className="w-6 h-6" />
               </div>
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-[10px] uppercase font-extrabold tracking-widest px-2.5 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-400/30">
-                    Medical Intelligence AI
+                  <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-200/80">
+                    Medical Intelligence
                   </span>
-                  <span className="text-xs text-slate-400 font-semibold flex items-center gap-1">
-                    <Sparkles className="w-3.5 h-3.5 text-teal-400" /> Tesseract + Gemini Flash
+                  <span className="text-xs text-slate-500 font-medium flex items-center gap-1">
+                    <Sparkles className="w-3.5 h-3.5 text-teal-600" /> Tesseract OCR + Gemini AI
                   </span>
                 </div>
-                <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+                <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
                   ClinicOCR
                 </h1>
-                <p className="text-xs sm:text-sm text-slate-400 mt-1">
+                <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
                   Prescription digitization, handwriting decoding & structured clinical EMR sync
                 </p>
               </div>
             </div>
 
-            {/* Sub-menu Tabs Matching the Screenshot */}
-            <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-slate-900/90 border border-slate-800 backdrop-blur-md self-start md:self-auto overflow-x-auto">
+            {/* Sub-menu Tabs */}
+            <div className="flex items-center gap-1.5 p-1.5 rounded-xl bg-slate-100/90 border border-slate-200/80 self-start md:self-auto overflow-x-auto">
               <button
                 onClick={() => switchTab('dashboard')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   activeTab === 'dashboard'
-                    ? 'bg-[#00d2ff]/20 text-[#00d2ff] border border-[#00d2ff]/40 shadow-sm'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                    ? 'bg-white text-sky-700 shadow-xs font-bold'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
                 }`}
               >
-                <LayoutGrid className="w-4 h-4 text-[#00d2ff]" />
+                <LayoutGrid className="w-4 h-4 text-sky-600" />
                 <span>Dashboard</span>
               </button>
 
               <button
                 onClick={() => switchTab('patients')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   activeTab === 'patients'
-                    ? 'bg-[#a855f7]/20 text-[#c084fc] border border-[#a855f7]/40 shadow-sm'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                    ? 'bg-white text-teal-700 shadow-xs font-bold'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
                 }`}
               >
-                <Users className="w-4 h-4 text-[#a855f7]" />
-                <span>Patients</span>
+                <Users className="w-4 h-4 text-teal-600" />
+                <span>{user?.role === 'PATIENT' ? 'Patient Records' : 'Patients'}</span>
               </button>
 
               <button
                 onClick={() => switchTab('upload')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   activeTab === 'upload'
-                    ? 'bg-[#ec4899]/20 text-[#f472b6] border border-[#ec4899]/40 shadow-sm'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                    ? 'bg-sky-600 text-white shadow-xs font-bold'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
                 }`}
               >
-                <Upload className="w-4 h-4 text-[#ec4899]" />
+                <Upload className="w-4 h-4" />
                 <span>Upload Prescription</span>
               </button>
             </div>
@@ -595,12 +604,12 @@ ${aiResult.precautions?.join(', ') || ''}`;
                 return (
                   <div
                     key={p._id}
-                    className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm hover:shadow-md hover:border-purple-300 transition-all flex flex-col justify-between"
+                    className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm hover:shadow-md hover:border-sky-300 transition-all flex flex-col justify-between"
                   >
                     <div>
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 font-bold flex items-center justify-center shrink-0">
+                          <div className="w-10 h-10 rounded-xl bg-sky-100 text-sky-700 font-bold flex items-center justify-center shrink-0">
                             {(p.user?.name || p.name || 'P')[0].toUpperCase()}
                           </div>
                           <div>
@@ -610,7 +619,7 @@ ${aiResult.precautions?.join(', ') || ''}`;
                             </p>
                           </div>
                         </div>
-                        <span className="px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 text-[11px] font-bold border border-purple-100">
+                        <span className="px-2.5 py-1 rounded-full bg-sky-50 text-sky-700 text-[11px] font-bold border border-sky-100">
                           {patientRxCount} Rx
                         </span>
                       </div>
@@ -627,7 +636,7 @@ ${aiResult.precautions?.join(', ') || ''}`;
                         switchTab('upload');
                         toast.success(`Selected patient: ${p.user?.name || p.name}`);
                       }}
-                      className="mt-4 w-full py-2 px-3 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                      className="mt-4 w-full py-2 px-3 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 font-bold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
                     >
                       <Scan className="w-3.5 h-3.5" />
                       <span>Scan Prescription for Patient</span>
@@ -645,8 +654,25 @@ ${aiResult.precautions?.join(', ') || ''}`;
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             {/* LEFT: Upload Box & OCR Raw View */}
             <div className="lg:col-span-5 space-y-5">
-              {/* Patient Selector (For Doctor/Receptionist) */}
-              {(user?.role === 'DOCTOR' || user?.role === 'RECEPTIONIST') && (
+              {/* Patient Selector (For Doctor/Receptionist/Patient) */}
+              {user?.role === 'PATIENT' ? (
+                <div className="bg-sky-50/70 border border-sky-200/80 rounded-2xl p-4 flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-sky-600 text-white flex items-center justify-center font-bold text-sm shrink-0">
+                    <User className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-slate-800 truncate">
+                      Linking to Your Medical Profile
+                    </p>
+                    <p className="text-[11px] text-slate-500 truncate">
+                      Patient: <span className="font-semibold text-slate-700">{user?.name}</span> ({user?.email})
+                    </p>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white border border-sky-200 text-sky-700 shrink-0">
+                    Auto-Linked
+                  </span>
+                </div>
+              ) : (
                 <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm space-y-2">
                   <label className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
                     <User className="w-3.5 h-3.5 text-sky-600" />
@@ -670,20 +696,20 @@ ${aiResult.precautions?.join(', ') || ''}`;
               {/* Upload Card */}
               <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-4">
                 <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                  <Upload className="w-4 h-4 text-pink-600" />
+                  <Upload className="w-4 h-4 text-sky-600" />
                   Prescription Document Image
                 </h2>
 
                 {!imagePreview ? (
-                  <label className="border-2 border-dashed border-slate-200 hover:border-pink-500 bg-slate-50/60 hover:bg-pink-50/30 rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer transition-all group">
-                    <div className="w-14 h-14 rounded-2xl bg-pink-100/70 text-pink-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform shadow-xs">
+                  <label className="border-2 border-dashed border-slate-200 hover:border-sky-500 bg-slate-50/60 hover:bg-sky-50/30 rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer transition-all group">
+                    <div className="w-14 h-14 rounded-2xl bg-sky-100 text-sky-700 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform shadow-xs">
                       <Scan className="w-7 h-7" />
                     </div>
-                    <p className="text-sm font-bold text-slate-700 group-hover:text-pink-700">
+                    <p className="text-sm font-bold text-slate-700 group-hover:text-sky-700">
                       Click to select prescription image
                     </p>
                     <p className="text-xs text-slate-400 mt-1">Supports JPG, JPEG, PNG (Max 12MB)</p>
-                    <p className="text-[11px] font-medium text-pink-600 mt-3 bg-pink-50 px-3 py-1 rounded-full border border-pink-200/60">
+                    <p className="text-[11px] font-medium text-sky-700 mt-3 bg-sky-50 px-3 py-1 rounded-full border border-sky-200/60">
                       High resolution recommended
                     </p>
                     <input
@@ -715,7 +741,7 @@ ${aiResult.precautions?.join(', ') || ''}`;
                     <button
                       onClick={runOcrAndAi}
                       disabled={ocrLoading || aiLoading}
-                      className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-pink-600 via-purple-600 to-sky-600 hover:from-pink-700 hover:to-sky-700 text-white font-bold text-sm shadow-md shadow-pink-600/20 hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                      className="w-full py-3 px-4 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-sm shadow-md shadow-sky-600/20 hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                     >
                       {ocrLoading || aiLoading ? (
                         <>
@@ -736,12 +762,12 @@ ${aiResult.precautions?.join(', ') || ''}`;
                 {ocrLoading && (
                   <div className="space-y-1.5">
                     <div className="flex justify-between text-xs font-semibold text-slate-500">
-                      <span>Tesseract OCR Neural Pass</span>
+                      <span>Tesseract OCR Handwriting Extraction</span>
                       <span>{ocrProgress}%</span>
                     </div>
                     <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-gradient-to-r from-pink-500 via-purple-500 to-sky-500 rounded-full transition-all duration-300"
+                        className="h-full bg-sky-600 rounded-full transition-all duration-300"
                         style={{ width: `${ocrProgress}%` }}
                       />
                     </div>
@@ -780,19 +806,19 @@ ${aiResult.precautions?.join(', ') || ''}`;
             <div className="lg:col-span-7 space-y-5">
               {!aiResult && !aiLoading ? (
                 <div className="bg-white rounded-2xl border border-slate-200/80 p-12 text-center shadow-sm flex flex-col items-center justify-center min-h-[380px]">
-                  <div className="w-16 h-16 rounded-2xl bg-pink-50 border border-pink-100 text-pink-600 flex items-center justify-center mb-4">
+                  <div className="w-16 h-16 rounded-2xl bg-sky-50 border border-sky-100 text-sky-600 flex items-center justify-center mb-4">
                     <Stethoscope className="w-8 h-8" />
                   </div>
                   <h3 className="text-lg font-bold text-slate-800">No Prescription Analyzed Yet</h3>
                   <p className="text-xs sm:text-sm text-slate-500 max-w-md mt-1">
-                    Upload an image on the left and click{' '}
-                    <span className="font-semibold text-pink-600">"Digitize with ClinicOCR"</span> to run Tesseract
+                    Upload a prescription image on the left and click{' '}
+                    <span className="font-semibold text-sky-600">"Digitize with ClinicOCR"</span> to run Tesseract
                     OCR and Google Gemini Medical Intelligence.
                   </p>
                 </div>
               ) : aiLoading ? (
                 <div className="bg-white rounded-2xl border border-slate-200/80 p-12 text-center shadow-sm flex flex-col items-center justify-center min-h-[380px] space-y-4">
-                  <div className="w-16 h-16 rounded-2xl bg-pink-100 flex items-center justify-center text-pink-600 animate-pulse">
+                  <div className="w-16 h-16 rounded-2xl bg-sky-50 flex items-center justify-center text-sky-600 animate-pulse">
                     <Sparkles className="w-8 h-8" />
                   </div>
                   <h3 className="text-base font-bold text-slate-800">Gemini Flash Clinical Analysis</h3>
@@ -944,34 +970,36 @@ ${aiResult.precautions?.join(', ') || ''}`;
                   )}
 
                   {/* Save to CareSync EMR button */}
-                  {(user?.role === 'DOCTOR' || user?.role === 'RECEPTIONIST') && (
-                    <div className="bg-gradient-to-br from-sky-50 to-teal-50 rounded-2xl border border-sky-100 p-5 space-y-4">
-                      <div>
-                        <h4 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                          <Save className="w-4 h-4 text-sky-600" />
-                          Save Structured Record to CareSync EMR
-                        </h4>
-                        <p className="text-xs text-slate-500 mt-0.5">
-                          {selectedPatient
-                            ? 'Patient chart linked! Click below to store permanently in patient file.'
-                            : 'Select a patient above to store this prescription into the database.'}
-                        </p>
-                      </div>
-
-                      <button
-                        onClick={handleSaveToEmr}
-                        disabled={savingToEmr || !selectedPatient}
-                        className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 transition-all"
-                      >
-                        {savingToEmr ? (
-                          <RefreshCw className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <CheckCircle2 className="w-4 h-4" />
-                        )}
-                        <span>Save to Patient File</span>
-                      </button>
+                  <div className="bg-gradient-to-br from-sky-50 to-teal-50 rounded-2xl border border-sky-100 p-5 space-y-4">
+                    <div>
+                      <h4 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                        <Save className="w-4 h-4 text-sky-600" />
+                        {user?.role === 'PATIENT'
+                          ? 'Save Prescription to My Health Records'
+                          : 'Save Structured Record to CareSync EMR'}
+                      </h4>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        {user?.role === 'PATIENT'
+                          ? 'Permanently link this scanned prescription to your personal CareSync Digital Health file.'
+                          : selectedPatient
+                          ? 'Patient chart linked! Click below to store permanently in patient file.'
+                          : 'Select a target patient chart above to store this prescription into the database.'}
+                      </p>
                     </div>
-                  )}
+
+                    <button
+                      onClick={handleSaveToEmr}
+                      disabled={savingToEmr || (user?.role !== 'PATIENT' && !selectedPatient)}
+                      className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 transition-all"
+                    >
+                      {savingToEmr ? (
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <CheckCircle2 className="w-4 h-4" />
+                      )}
+                      <span>{user?.role === 'PATIENT' ? 'Save to My Records' : 'Save to Patient File'}</span>
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -1005,6 +1033,32 @@ ${aiResult.precautions?.join(', ') || ''}`;
               </div>
 
               <div className="space-y-3">
+                {/* Scanned Image Preview if available */}
+                {selectedRxDetail.scannedImage && (
+                  <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                        <FileText className="w-3.5 h-3.5 text-sky-600" /> Original Scanned Document
+                      </p>
+                      <a
+                        href={selectedRxDetail.scannedImage}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-semibold text-sky-600 hover:text-sky-700 underline"
+                      >
+                        Open Full View
+                      </a>
+                    </div>
+                    <div className="max-h-64 rounded-lg bg-slate-900 border border-slate-200 overflow-hidden flex items-center justify-center">
+                      <img
+                        src={selectedRxDetail.scannedImage}
+                        alt="Original Scanned Prescription"
+                        className="max-h-64 w-auto object-contain"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <div className="p-3 bg-slate-50 rounded-xl">
                   <p className="text-xs font-bold text-slate-500 uppercase">Diagnosis / Notes</p>
                   <p className="text-sm font-semibold text-slate-800 mt-1">{selectedRxDetail.diagnosis}</p>

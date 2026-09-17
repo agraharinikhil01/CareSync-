@@ -8,6 +8,7 @@ const PatientPrescriptions = () => {
   const [prescriptions, setPrescriptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [qrModal, setQrModal] = useState(null);
+  const [imageModal, setImageModal] = useState(null);
 
   useEffect(() => {
     fetchPrescriptions();
@@ -95,16 +96,23 @@ const PatientPrescriptions = () => {
               >
                 <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 border-b border-slate-100 pb-4">
                   <div>
-                    <span className="text-[11px] font-mono font-semibold text-sky-700 bg-sky-50 px-2.5 py-0.5 rounded-md border border-sky-200/70">
-                      Rx #{rx._id.substring(rx._id.length - 8).toUpperCase()}
-                    </span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[11px] font-mono font-semibold text-sky-700 bg-sky-50 px-2.5 py-0.5 rounded-md border border-sky-200/70">
+                        Rx #{rx._id.substring(rx._id.length - 8).toUpperCase()}
+                      </span>
+                      {rx.source === 'ClinicOCR' && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200">
+                          ClinicOCR Digitized
+                        </span>
+                      )}
+                    </div>
                     <h3 className="font-bold text-lg text-slate-900 mt-1.5">
                       Diagnosis: {rx.diagnosis}
                     </h3>
                     <p className="text-xs text-slate-500 flex items-center gap-2 mt-0.5">
                       <span className="flex items-center gap-1 font-medium text-slate-700">
                         <Stethoscope className="w-3.5 h-3.5 text-sky-600" />
-                        Dr. {rx.doctor?.name}
+                        Dr. {rx.doctor?.name || 'CareSync Physician'}
                       </span>
                       <span>·</span>
                       <span>
@@ -118,7 +126,15 @@ const PatientPrescriptions = () => {
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {rx.scannedImage && (
+                      <button
+                        onClick={() => setImageModal(rx)}
+                        className="px-3.5 py-2 bg-teal-50 hover:bg-teal-100 text-teal-800 text-xs font-semibold rounded-xl flex items-center gap-1.5 border border-teal-200/70 transition-colors cursor-pointer"
+                      >
+                        <FileText className="w-4 h-4 text-teal-600" /> View Scanned Doc
+                      </button>
+                    )}
                     {rx.qrCode && (
                       <button
                         onClick={() => setQrModal(rx)}
@@ -211,6 +227,60 @@ const PatientPrescriptions = () => {
               >
                 Close Window
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Scanned Document Image Modal */}
+        {imageModal && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
+            <div className="bg-white rounded-3xl border border-slate-200/80 shadow-2xl w-full max-w-xl p-6 space-y-4 max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-150">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center font-bold">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-base text-slate-900">
+                      Original Scanned Prescription
+                    </h3>
+                    <p className="text-xs text-slate-400">
+                      Prescription #{imageModal._id.substring(imageModal._id.length - 8).toUpperCase()}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setImageModal(null)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="rounded-2xl overflow-hidden bg-slate-900 border border-slate-200 flex items-center justify-center max-h-[65vh]">
+                <img
+                  src={imageModal.scannedImage}
+                  alt="Scanned Prescription Document"
+                  className="max-h-[65vh] w-auto object-contain"
+                />
+              </div>
+
+              <div className="flex items-center justify-between pt-2">
+                <a
+                  href={imageModal.scannedImage}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 bg-sky-50 text-sky-700 hover:bg-sky-100 font-semibold text-xs rounded-xl transition-colors"
+                >
+                  Open Full Resolution
+                </a>
+                <button
+                  onClick={() => setImageModal(null)}
+                  className="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition-colors cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         )}

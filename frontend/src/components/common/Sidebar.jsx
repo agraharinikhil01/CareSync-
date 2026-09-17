@@ -170,52 +170,56 @@ const Sidebar = ({ isOpen, closeSidebar, openAI }) => {
             {/* ClinicOCR Expandable Section (Doctor, Receptionist, Patient ONLY) */}
             {isEligibleForOcr && (
               <div className="pt-2">
-                <div className="rounded-2xl bg-[#090f20] border border-slate-800/80 p-2 text-white shadow-lg shadow-sky-950/20">
+                <div className="rounded-2xl bg-sky-50/70 border border-sky-100/90 p-2 text-slate-800 shadow-xs">
                   {/* Header Toggle */}
                   <button
                     type="button"
                     onClick={() => setOcrOpen(!ocrOpen)}
-                    className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-slate-800/70 transition-colors cursor-pointer group text-left"
+                    className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-white/80 transition-all cursor-pointer group text-left"
                   >
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-xl bg-white text-slate-900 flex items-center justify-center shadow-xs shrink-0">
-                        <Stethoscope className="w-4.5 h-4.5 text-slate-900" />
+                      <div className="w-8 h-8 rounded-xl bg-sky-600 text-white flex items-center justify-center shadow-xs shrink-0">
+                        <Stethoscope className="w-4.5 h-4.5" />
                       </div>
                       <div>
-                        <span className="font-extrabold text-sm tracking-tight text-white group-hover:text-sky-300 transition-colors block leading-tight">
+                        <span className="font-bold text-sm tracking-tight text-slate-900 group-hover:text-sky-700 transition-colors block leading-tight">
                           ClinicOCR
                         </span>
-                        <span className="text-[10px] text-slate-400 font-medium leading-none">
-                          Medical Document AI
+                        <span className="text-[10px] text-slate-500 font-medium leading-none">
+                          Prescription AI
                         </span>
                       </div>
                     </div>
                     <div className="text-slate-400 pl-2">
                       {ocrOpen ? (
-                        <ChevronDown className="w-4 h-4 text-slate-400 group-hover:text-white transition-colors" />
+                        <ChevronDown className="w-4 h-4 text-slate-500 group-hover:text-slate-700 transition-colors" />
                       ) : (
-                        <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-white transition-colors" />
+                        <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-slate-700 transition-colors" />
                       )}
                     </div>
                   </button>
 
                   {/* 3 Sub-items (Dashboard, Patients, Upload Prescription) */}
                   {ocrOpen && (
-                    <div className="mt-1 space-y-1 pt-1.5 border-t border-slate-800/80">
+                    <div className="mt-1 space-y-1 pt-1.5 border-t border-sky-200/50">
                       {/* 1. Dashboard */}
                       <NavLink
                         to={`/${ocrRolePath}/ocr/dashboard`}
                         onClick={closeSidebar}
                         className={({ isActive }) =>
-                          `flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                          `flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
                             isActive
-                              ? 'bg-slate-800/90 text-white shadow-xs'
-                              : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+                              ? 'bg-sky-600 text-white shadow-xs'
+                              : 'text-slate-700 hover:text-slate-900 hover:bg-white/80'
                           }`
                         }
                       >
-                        <LayoutGrid className="w-4 h-4 text-[#00d2ff] shrink-0" />
-                        <span>Dashboard</span>
+                        {({ isActive }) => (
+                          <>
+                            <LayoutGrid className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-sky-600'}`} />
+                            <span>Dashboard</span>
+                          </>
+                        )}
                       </NavLink>
 
                       {/* 2. Patients */}
@@ -223,15 +227,19 @@ const Sidebar = ({ isOpen, closeSidebar, openAI }) => {
                         to={`/${ocrRolePath}/ocr/patients`}
                         onClick={closeSidebar}
                         className={({ isActive }) =>
-                          `flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                          `flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
                             isActive
-                              ? 'bg-slate-800/90 text-white shadow-xs'
-                              : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+                              ? 'bg-sky-600 text-white shadow-xs'
+                              : 'text-slate-700 hover:text-slate-900 hover:bg-white/80'
                           }`
                         }
                       >
-                        <Users className="w-4 h-4 text-[#a855f7] shrink-0" />
-                        <span>Patients</span>
+                        {({ isActive }) => (
+                          <>
+                            <Users className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-teal-600'}`} />
+                            <span>{user?.role === 'PATIENT' ? 'Patient Records' : 'Patients'}</span>
+                          </>
+                        )}
                       </NavLink>
 
                       {/* 3. Upload Prescription */}
@@ -239,15 +247,19 @@ const Sidebar = ({ isOpen, closeSidebar, openAI }) => {
                         to={`/${ocrRolePath}/ocr/upload`}
                         onClick={closeSidebar}
                         className={({ isActive }) =>
-                          `flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                          `flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
                             isActive
-                              ? 'bg-slate-800/90 text-white shadow-xs'
-                              : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+                              ? 'bg-sky-600 text-white shadow-xs'
+                              : 'text-slate-700 hover:text-slate-900 hover:bg-white/80'
                           }`
                         }
                       >
-                        <Upload className="w-4 h-4 text-[#ec4899] shrink-0" />
-                        <span>Upload Prescription</span>
+                        {({ isActive }) => (
+                          <>
+                            <Upload className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-indigo-600'}`} />
+                            <span>Upload Prescription</span>
+                          </>
+                        )}
                       </NavLink>
                     </div>
                   )}

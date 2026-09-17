@@ -15,7 +15,7 @@ router.get('/verify/:hash', verifyPrescription);
 
 router.use(protect);
 
-router.post('/', authorize('DOCTOR', 'ADMIN'), createPrescription);
+router.post('/', authorize('DOCTOR', 'ADMIN', 'RECEPTIONIST', 'PATIENT'), createPrescription);
 router.get('/', getPrescriptions);
 router.get('/:id', getPrescriptionById);
 router.get('/:id/pdf', downloadPrescriptionPDF);

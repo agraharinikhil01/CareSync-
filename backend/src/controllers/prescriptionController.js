@@ -4,11 +4,15 @@ const Patient = require('../models/Patient');
 const { generatePrescriptionPDF } = require('../services/pdfService');
 const { generatePrescriptionVerificationQR } = require('../services/qrService');
 
-// POST /api/prescriptions (Doctor only)
+// POST /api/prescriptions (Doctor, Receptionist, Patient, Admin)
+const Doctor = require('../models/Doctor');
+const User = require('../models/User');
+
 const createPrescription = async (req, res) => {
   try {
     const {
       patient,
+      doctor,
       appointment,
       diagnosis,
       symptoms,
@@ -18,30 +22,55 @@ const createPrescription = async (req, res) => {
       notes,
       labTests,
       followUpDate,
+      scannedImage,
+      source,
     } = req.body;
 
-    if (!patient || !diagnosis || !medicines || medicines.length === 0) {
-      return res.status(400).json({ success: false, message: 'Please provide patient, diagnosis, and at least one medicine' });
+    // Determine target patient user ID
+    let patientUserId = patient;
+    if (req.user.role === 'PATIENT') {
+      patientUserId = req.user._id;
+    } else if (patient) {
+      const patientDoc = await Patient.findById(patient);
+      if (patientDoc && patientDoc.user) {
+        patientUserId = patientDoc.user;
+      }
     }
 
-    // Normalize patient ID (User ID vs Patient doc ID)
-    let patientUserId = patient;
-    const patientDoc = await Patient.findById(patient);
-    if (patientDoc && patientDoc.user) {
-      patientUserId = patientDoc.user;
+    if (!patientUserId) {
+      return res.status(400).json({ success: false, message: 'Please specify target patient' });
+    }
+
+    if (!diagnosis || !medicines || medicines.length === 0) {
+      return res.status(400).json({ success: false, message: 'Please provide diagnosis and at least one medicine' });
+    }
+
+    // Determine doctor user ID
+    let doctorUserId = doctor;
+    if (req.user.role === 'DOCTOR') {
+      doctorUserId = req.user._id;
+    } else if (!doctorUserId) {
+      // Auto-assign to available doctor or hospital staff doctor
+      const anyDoctor = await Doctor.findOne().populate('user');
+      if (anyDoctor && anyDoctor.user) {
+        doctorUserId = anyDoctor.user._id || anyDoctor.user;
+      } else {
+        const docUser = await User.findOne({ role: 'DOCTOR' });
+        doctorUserId = docUser ? docUser._id : req.user._id;
+      }
     }
 
     const verificationHash = crypto
       .createHash('sha256')
-      .update(`${patientUserId}-${req.user._id}-${diagnosis}-${Date.now()}`)
+      .update(`${patientUserId}-${doctorUserId}-${diagnosis}-${Date.now()}`)
       .digest('hex');
 
     const prescription = new Prescription({
       patient: patientUserId,
-      doctor: req.user._id,
+      doctor: doctorUserId,
       appointment: appointment || null,
       diagnosis,
-      symptoms: Array.isArray(symptoms) ? symptoms : [],
+      symptoms: Array.isArray(symptoms) ? symptoms : typeof symptoms === 'string' ? [symptoms] : [],
       medicines,
       advice: advice || instructions || '',
       instructions: instructions || advice || '',
@@ -49,6 +78,8 @@ const createPrescription = async (req, res) => {
       labTests: Array.isArray(labTests) ? labTests : [],
       followUpDate: followUpDate || null,
       verificationHash,
+      scannedImage: scannedImage || '',
+      source: source || (scannedImage ? 'ClinicOCR' : 'Manual'),
     });
 
     const qrCode = await generatePrescriptionVerificationQR(prescription._id.toString(), verificationHash);
@@ -57,7 +88,7 @@ const createPrescription = async (req, res) => {
     await prescription.save();
     await prescription.populate(['patient', 'doctor']);
 
-    res.status(201).json({ success: true, message: 'Prescription created', data: prescription });
+    res.status(201).json({ success: true, message: 'Prescription created successfully', data: prescription });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

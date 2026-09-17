@@ -63,6 +63,14 @@ const PrescriptionSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    scannedImage: {
+      type: String,
+      default: '',
+    },
+    source: {
+      type: String,
+      default: 'Manual',
+    },
   },
   { timestamps: true }
 );

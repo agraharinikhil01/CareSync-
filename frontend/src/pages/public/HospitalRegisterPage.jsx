@@ -101,7 +101,7 @@ const HospitalRegisterPage = () => {
             <h2 className="text-2xl font-black text-slate-900">Application Submitted for Verification</h2>
             <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
               Your hospital registration has been received. Our System Admin network team reviews credentials
-              and bed verification before listing your facility on the public HospitalRadar map.
+              and bed verification before listing your facility on the public CareSync map.
             </p>
             <div className="pt-4 flex justify-center gap-3">
               <Link
@@ -117,7 +117,7 @@ const HospitalRegisterPage = () => {
             <div className="p-6 sm:p-8 bg-gradient-to-r from-sky-600 to-teal-600 text-white space-y-1">
               <h1 className="text-2xl font-black tracking-tight">Register Your Healthcare Facility</h1>
               <p className="text-xs text-sky-100">
-                Join the live HospitalRadar grid to provide patients with transparent real-time bed capacity.
+                Join the live CareSync grid to provide patients with transparent real-time bed capacity.
               </p>
             </div>
 

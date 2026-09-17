@@ -47,8 +47,18 @@ const getDoctorById = async (req, res) => {
 // GET /api/doctors/me/profile
 const getMyDoctorProfile = async (req, res) => {
   try {
-    const doctor = await Doctor.findOne({ user: req.user._id }).populate('user', '-password');
-    if (!doctor) return res.status(404).json({ success: false, message: 'Doctor profile not found' });
+    let doctor = await Doctor.findOne({ user: req.user._id }).populate('user', '-password');
+    if (!doctor) {
+      doctor = await Doctor.create({
+        user: req.user._id,
+        specialization: 'General Medicine',
+        qualification: 'MBBS, MD',
+        experience: 5,
+        consultationFee: 500,
+        availability: true,
+      });
+      doctor = await Doctor.findById(doctor._id).populate('user', '-password');
+    }
     res.json({ success: true, data: doctor });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

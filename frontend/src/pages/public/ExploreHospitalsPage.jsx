@@ -158,7 +158,7 @@ const ExploreHospitalsPage = () => {
             </Link>
             <div className="h-4 w-px bg-slate-200"></div>
             <span className="text-base font-black text-slate-900">
-              Hospital<span className="text-sky-600">Radar</span>
+              Care<span className="text-sky-600">Sync</span>
             </span>
           </div>
 

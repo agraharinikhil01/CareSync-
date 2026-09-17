@@ -24,11 +24,7 @@ const LandingPage = () => {
   const navigate = useNavigate();
 
   const handleFindHospitals = () => {
-    if (user) {
-      navigate('/patient/dashboard');
-    } else {
-      navigate('/explore');
-    }
+    navigate('/explore');
   };
 
   return (
@@ -42,7 +38,7 @@ const LandingPage = () => {
             </div>
             <div>
               <span className="text-xl font-black tracking-tight text-slate-900">
-                Hospital<span className="text-sky-600">Radar</span>
+                Care<span className="text-sky-600">Sync</span>
               </span>
               <span className="hidden sm:inline-block ml-2 text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                 Live Network
@@ -105,7 +101,7 @@ const LandingPage = () => {
             <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-100/80 border border-sky-200 text-sky-800 text-xs font-bold">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-                <span>RailRadar-Inspired Real-Time Hospital Discovery</span>
+                <span>CareSync Real-Time Hospital Discovery Grid</span>
               </div>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-[1.12]">
@@ -164,7 +160,7 @@ const LandingPage = () => {
                   <div className="flex items-center gap-2">
                     <span className="w-3 h-3 rounded-full bg-rose-500 animate-ping"></span>
                     <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                      Live Hospital Radar
+                      Live CareSync Radar
                     </span>
                   </div>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -220,12 +216,12 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* How HospitalRadar Works */}
+      {/* How CareSync Works */}
       <section id="how-it-works" className="py-20 bg-slate-50/60 border-t border-slate-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto space-y-3">
             <h2 className="text-xs font-bold text-sky-600 uppercase tracking-wider">Seamless Patient Journey</h2>
-            <h3 className="text-3xl font-extrabold text-slate-900">How HospitalRadar Works</h3>
+            <h3 className="text-3xl font-extrabold text-slate-900">How CareSync Works</h3>
             <p className="text-slate-600 text-sm">
               Connecting patients, doctors, and hospitals into a coordinated healthcare grid.
             </p>
@@ -238,7 +234,7 @@ const LandingPage = () => {
               </div>
               <h4 className="font-bold text-base text-slate-900">Allow Location</h4>
               <p className="text-xs text-slate-500 leading-relaxed">
-                HospitalRadar identifies your position to search hospitals within your emergency radius.
+                CareSync identifies your position to search hospitals within your emergency radius.
               </p>
             </div>
 
@@ -303,8 +299,8 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6 text-xs">
           <div className="flex items-center gap-2">
             <Compass className="w-5 h-5 text-sky-400" />
-            <span className="text-white font-bold text-sm">HospitalRadar</span>
-            <span>— Part of the CareSync Health Ecosystem</span>
+            <span className="text-white font-bold text-sm">CareSync</span>
+            <span>— Real-Time Hospital Discovery &amp; Management Platform</span>
           </div>
           <p>© {new Date().getFullYear()} CareSync Systems. Dedicated to zero patient delays.</p>
         </div>

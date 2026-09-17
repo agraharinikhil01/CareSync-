@@ -75,11 +75,10 @@ const BillSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-BillSchema.pre('save', function (next) {
+BillSchema.pre('save', function () {
   if (!this.invoiceNumber) {
     this.invoiceNumber = `INV-${this._id.toString().slice(-6).toUpperCase()}`;
   }
-  next();
 });
 
 module.exports = mongoose.model('Bill', BillSchema);

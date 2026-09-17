@@ -54,11 +54,10 @@ const PatientSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-PatientSchema.pre('save', function (next) {
+PatientSchema.pre('save', function () {
   if (!this.patientId) {
     this.patientId = `PAT-${this._id.toString().slice(-6).toUpperCase()}`;
   }
-  next();
 });
 
 module.exports = mongoose.model('Patient', PatientSchema);

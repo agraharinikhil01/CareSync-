@@ -50,7 +50,11 @@ export const AuthProvider = ({ children }) => {
         return { success: true, user: newUser };
       }
     } catch (err) {
-      const msg = err.response?.data?.message || 'Login failed. Please check your credentials.';
+      const msg =
+        err.response?.data?.message ||
+        (!err.response
+          ? 'Cannot connect to CareSync server. Please ensure the backend is running.'
+          : 'Login failed. Please check your credentials.');
       toast.error(msg);
       return { success: false, message: msg };
     }

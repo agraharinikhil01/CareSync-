@@ -8,10 +8,16 @@
     "dev": "nodemon src/server.js",
     "seed": "node src/utils/seed.js"
   },
-  "keywords": ["hms", "hospital", "healthcare", "mern"],
+  "keywords": [
+    "hms",
+    "hospital",
+    "healthcare",
+    "mern"
+  ],
   "author": "CareSync Systems",
   "license": "ISC",
   "dependencies": {
+    "@google/genai": "^2.23.0",
     "@google/generative-ai": "^0.24.1",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",

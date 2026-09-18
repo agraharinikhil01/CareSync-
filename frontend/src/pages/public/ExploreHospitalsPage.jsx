@@ -101,7 +101,7 @@ const ExploreHospitalsPage = () => {
     }
   };
 
-  const fetchNearby = async () => {
+  const fetchNearby = async (retryCount = 0) => {
     setLoading(true);
     try {
       const params = {
@@ -115,13 +115,18 @@ const ExploreHospitalsPage = () => {
 
       const res = await api.get('/hospitals/nearby', { params });
       if (res.data.success) {
-        setHospitals(res.data.data);
-        if (res.data.data.length > 0 && !selectedHospital) {
+        setHospitals(res.data.data || []);
+        if (res.data.data?.length > 0 && !selectedHospital) {
           setSelectedHospital(res.data.data[0]);
         }
       }
-    } catch {
-      toast.error('Unable to fetch live hospitals');
+    } catch (err) {
+      console.error('Error fetching nearby hospitals:', err);
+      if (retryCount < 1) {
+        setTimeout(() => fetchNearby(retryCount + 1), 1500);
+      } else {
+        toast.error(err.response?.data?.message || 'Unable to fetch live hospitals. Please refresh or try again.');
+      }
     } finally {
       setLoading(false);
     }

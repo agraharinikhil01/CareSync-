@@ -1,8 +1,14 @@
-const { Server } = require('socket.io');
+let Server = null;
+try {
+  Server = require('socket.io').Server;
+} catch (e) {
+  Server = null;
+}
 
 let io = null;
 
 const initSocket = (httpServer) => {
+  if (!Server || !httpServer) return null;
   io = new Server(httpServer, {
     cors: {
       origin: '*', // Allow all origins in dev, frontend client

@@ -10,6 +10,7 @@
     "dev:frontend": "cd frontend && npm run dev"
   },
   "dependencies": {
+    "@google/genai": "^2.23.0",
     "@google/generative-ai": "^0.24.1",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
@@ -22,6 +23,7 @@
     "morgan": "^1.12.0",
     "node-cron": "^4.6.0",
     "pdfkit": "^0.16.0",
-    "qrcode": "^1.5.4"
+    "qrcode": "^1.5.4",
+    "socket.io": "^4.8.3"
   }
 }

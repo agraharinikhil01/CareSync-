@@ -54,9 +54,10 @@ const PatientDashboard = () => {
   const [minIcu, setMinIcu] = useState('');
   const [sortBy, setSortBy] = useState('distance'); // 'distance' | 'availability' | 'name'
 
-  // Geolocation state
-  const [userLocation, setUserLocation] = useState({ lat: 28.6139, lng: 77.2090 }); // Default Delhi
-  const [locationName, setLocationName] = useState('New Delhi, India');
+  // Geolocation state — null = not yet resolved, waits before fetching hospitals
+  const [userLocation, setUserLocation] = useState(null);
+  const [locationName, setLocationName] = useState('Detecting location...');
+  const [locationSource, setLocationSource] = useState(''); // 'gps' | 'ip' | 'default'
   const [locating, setLocating] = useState(false);
 
   // View state (for mobile toggle: 'split' | 'list' | 'map')
@@ -68,12 +69,15 @@ const PatientDashboard = () => {
   const [lastLiveUpdate, setLastLiveUpdate] = useState(null);
 
   useEffect(() => {
-    // Attempt HTML5 Geolocation on initial load
+    // Attempt location detection on initial load
     detectLocation();
   }, []);
 
+  // Only fetch hospitals after location is resolved (not null)
   useEffect(() => {
-    fetchNearbyHospitals();
+    if (userLocation !== null) {
+      fetchNearbyHospitals();
+    }
   }, [userLocation, selectedSpecialty, emergencyOnly]);
 
   // Real-time Socket.IO Listener for instant hospital updates
@@ -104,26 +108,62 @@ const PatientDashboard = () => {
     };
   }, []);
 
+  // Step 1: Try GPS → Step 2: IP-based fallback → Step 3: Default Delhi
   const detectLocation = () => {
+    setLocating(true);
+    setLocationName('Detecting location...');
+
     if ('geolocation' in navigator) {
-      setLocating(true);
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const lat = pos.coords.latitude;
           const lng = pos.coords.longitude;
           setUserLocation({ lat, lng });
-          setLocationName('Your Current GPS Location');
+          setLocationName('📍 Your Live GPS Location');
+          setLocationSource('gps');
           setLocating(false);
           toast.success('📍 Location acquired! Discovering nearest hospitals.');
         },
-        (err) => {
-          console.warn('Geolocation denied/unavailable, fallback to Delhi center:', err.message);
-          setLocating(false);
+        async (err) => {
+          console.warn('GPS denied/failed:', err.message, '— trying IP fallback...');
+          await fetchIpLocation();
         },
-        { enableHighAccuracy: true, timeout: 8000 }
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
       );
+    } else {
+      fetchIpLocation();
     }
   };
+
+  const fetchIpLocation = async () => {
+    try {
+      const response = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(6000) });
+      if (!response.ok) throw new Error('ipapi failed');
+      const data = await response.json();
+      if (data.latitude && data.longitude) {
+        const lat = parseFloat(data.latitude);
+        const lng = parseFloat(data.longitude);
+        setUserLocation({ lat, lng });
+        const city = data.city || data.region || 'Your City';
+        setLocationName(`📡 ${city} (Network Location)`);
+        setLocationSource('ip');
+        setLocating(false);
+        toast.success(`📡 Location detected: ${city}. Discovering nearby hospitals!`);
+        return;
+      }
+      throw new Error('No lat/lng from ipapi');
+    } catch (ipErr) {
+      console.warn('IP location failed:', ipErr.message, '— using Delhi fallback');
+      setUserLocation({ lat: 28.6139, lng: 77.2090 });
+      setLocationName('🏙️ New Delhi (Default)');
+      setLocationSource('default');
+      setLocating(false);
+      toast('📍 Location unavailable — showing New Delhi hospitals.', { icon: 'ℹ️' });
+    }
+  };
+
+
+
 
   const fetchNearbyHospitals = async (retryCount = 0) => {
     setLoading(true);

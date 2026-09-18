@@ -302,98 +302,86 @@ const PatientDashboard = () => {
           )}
         </div>
 
-        {/* Mobile View Toggle Buttons */}
-        <div className="flex lg:hidden items-center justify-center p-1 bg-slate-200/80 rounded-2xl">
-          <button
-            type="button"
-            onClick={() => setMobileTab('list')}
-            className={`flex-1 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-              mobileTab === 'list' ? 'bg-white shadow text-slate-900' : 'text-slate-600'
-            }`}
-          >
-            <List className="w-3.5 h-3.5" />
-            <span>Hospital List ({displayedHospitals.length})</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setMobileTab('map')}
-            className={`flex-1 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-              mobileTab === 'map' ? 'bg-white shadow text-slate-900' : 'text-slate-600'
-            }`}
-          >
-            <MapIcon className="w-3.5 h-3.5" />
-            <span>Live Radar Map</span>
-          </button>
-        </div>
-
-        {/* RailRadar Split Layout: Left List + Right Interactive Leaflet Map */}
-        <div className="grid lg:grid-cols-12 gap-5 items-start">
-          {/* Left Column: Hospital List */}
-          <div
-            className={`lg:col-span-5 space-y-3 ${
-              mobileTab === 'map' ? 'hidden lg:block' : 'block'
-            }`}
-          >
-            <div className="flex items-center justify-between px-1">
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                {displayedHospitals.length} Hospitals Discovered
-              </p>
-              <button
-                type="button"
-                onClick={fetchNearbyHospitals}
-                className="text-xs text-sky-600 hover:text-sky-700 font-bold flex items-center gap-1 cursor-pointer"
-              >
-                <RefreshCw className="w-3 h-3" /> Refresh
-              </button>
+        {/* 1. TOP: SATELLITE RADAR MAP (MapTiler Powered) */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+              <h2 className="text-xs font-bold text-slate-600 uppercase tracking-wider">
+                🛰️ Live Satellite Radar Map (MapTiler High-Resolution Satellite)
+              </h2>
             </div>
-
-            {loading ? (
-              <div className="bg-white rounded-3xl border border-slate-200/90 p-8 text-center space-y-2">
-                <div className="w-8 h-8 rounded-full border-4 border-sky-600 border-t-transparent animate-spin mx-auto"></div>
-                <p className="text-xs font-bold text-slate-500">Scanning hospital grid &amp; bed counters...</p>
-              </div>
-            ) : displayedHospitals.length === 0 ? (
-              <div className="bg-white rounded-3xl border border-slate-200/90 p-8 text-center space-y-2">
-                <Compass className="w-10 h-10 text-slate-400 mx-auto" />
-                <h4 className="font-bold text-sm text-slate-800">No Hospitals Found</h4>
-                <p className="text-xs text-slate-500">
-                  Try adjusting your radius, specialty filter, or search keywords.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3 max-h-[calc(100vh-280px)] overflow-y-auto pr-1">
-                {displayedHospitals.map((hosp) => (
-                  <HospitalCard
-                    key={hosp._id}
-                    hospital={hosp}
-                    isSelected={selectedHospital?._id === hosp._id}
-                    onSelect={(h) => {
-                      setSelectedHospital(h);
-                      // On mobile switch to map view if user tapped card
-                      if (window.innerWidth < 1024) {
-                        setMobileTab('map');
-                      }
-                    }}
-                  />
-                ))}
-              </div>
-            )}
+            <span className="text-xs text-slate-500 font-medium hidden sm:inline">
+              Click any hospital pin for real-time capacity and navigation
+            </span>
           </div>
 
-          {/* Right Column: Interactive Leaflet Map */}
-          <div
-            className={`lg:col-span-7 h-[calc(100vh-260px)] min-h-[500px] sticky top-20 ${
-              mobileTab === 'list' ? 'hidden lg:block' : 'block'
-            }`}
-          >
+          <div className="w-full h-[460px] sm:h-[520px] rounded-3xl overflow-hidden shadow-xl border border-slate-800/30">
             <HospitalMap
               hospitals={displayedHospitals}
               userLocation={userLocation}
               selectedHospital={selectedHospital}
               onSelectHospital={(h) => setSelectedHospital(h)}
               onLocateMe={detectLocation}
+              height="100%"
             />
           </div>
+        </div>
+
+        {/* 2. BOTTOM: AVAILABLE HOSPITALS SECTION (Directly Below Map) */}
+        <div className="space-y-4 pt-2">
+          {/* Header & Quick Stats */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-3">
+            <div>
+              <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                🏥 Available Hospitals Near You
+                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800 border border-sky-200">
+                  {displayedHospitals.length} Found
+                </span>
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Real-time bed counters, emergency capabilities, and one-click directions
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={fetchNearbyHospitals}
+                className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+              >
+                <RefreshCw className="w-3.5 h-3.5 text-sky-600" />
+                <span>Refresh Counters</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Hospital Cards Grid */}
+          {loading ? (
+            <div className="bg-white rounded-3xl border border-slate-200/90 p-12 text-center space-y-2">
+              <div className="w-8 h-8 rounded-full border-4 border-sky-600 border-t-transparent animate-spin mx-auto"></div>
+              <p className="text-xs font-bold text-slate-500">Scanning hospital grid &amp; bed counters...</p>
+            </div>
+          ) : displayedHospitals.length === 0 ? (
+            <div className="bg-white rounded-3xl border border-slate-200/90 p-12 text-center space-y-2">
+              <Compass className="w-10 h-10 text-slate-400 mx-auto" />
+              <h4 className="font-bold text-sm text-slate-800">No Hospitals Found</h4>
+              <p className="text-xs text-slate-500">
+                Try adjusting your radius, specialty filter, or search keywords.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {displayedHospitals.map((hosp) => (
+                <HospitalCard
+                  key={hosp._id}
+                  hospital={hosp}
+                  isSelected={selectedHospital?._id === hosp._id}
+                  onSelect={(h) => setSelectedHospital(h)}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

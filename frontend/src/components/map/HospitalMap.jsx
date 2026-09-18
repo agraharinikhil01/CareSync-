@@ -1,36 +1,79 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { Navigation, Phone, ExternalLink, Bed, HeartPulse, ShieldCheck, Clock } from 'lucide-react';
+import { Navigation, ExternalLink, Bed, HeartPulse, ShieldCheck, Clock, Layers, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-// Recenter helper component for dynamic map pans
-const MapRecenter = ({ center, zoom }) => {
+const MAPTILER_KEY = import.meta.env.VITE_MAPTILER_KEY || 'RbtagRyEluq70WIwgao8';
+
+const MAP_STYLES = {
+  satellite: {
+    id: 'satellite',
+    label: '🛰️ Satellite',
+    url: `https://api.maptiler.com/maps/hybrid/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`,
+    attribution: '&copy; <a href="https://www.maptiler.com/copyright/" target="_blank">MapTiler</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>',
+    maxZoom: 20,
+    tileSize: 512,
+    zoomOffset: -1,
+  },
+  pureSatellite: {
+    id: 'pureSatellite',
+    label: '🌍 Pure Earth',
+    url: `https://api.maptiler.com/maps/satellite/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`,
+    attribution: '&copy; <a href="https://www.maptiler.com/copyright/" target="_blank">MapTiler</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>',
+    maxZoom: 20,
+    tileSize: 512,
+    zoomOffset: -1,
+  },
+  streets: {
+    id: 'streets',
+    label: '🗺️ Streets',
+    url: `https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`,
+    attribution: '&copy; <a href="https://www.maptiler.com/copyright/" target="_blank">MapTiler</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>',
+    maxZoom: 20,
+    tileSize: 512,
+    zoomOffset: -1,
+  },
+};
+
+// Smooth Camera Controller with flyTo on selection & location update
+const MapCameraController = ({ center, zoom, selectedHospital }) => {
   const map = useMap();
+
   useEffect(() => {
-    if (center && center[0] && center[1]) {
-      map.setView(center, zoom || 13, { animate: true });
+    if (selectedHospital?.location?.coordinates && selectedHospital.location.coordinates.length >= 2) {
+      const [lng, lat] = selectedHospital.location.coordinates;
+      map.flyTo([lat, lng], Math.max(map.getZoom(), 14), {
+        animate: true,
+        duration: 1.2,
+      });
+    } else if (center && center[0] && center[1]) {
+      map.flyTo(center, zoom || 13, {
+        animate: true,
+        duration: 1.0,
+      });
     }
-  }, [center, zoom, map]);
+  }, [selectedHospital, center, zoom, map]);
+
   return null;
 };
 
-// Create custom SVG DivIcon for user location
+// User Location SVG Radar Marker
 const createUserIcon = () => {
   return L.divIcon({
-    className: 'custom-user-pin',
+    className: 'custom-user-radar-pin',
     html: `
-      <div style="position: relative; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;">
-        <div style="position: absolute; width: 28px; height: 28px; border-radius: 9999px; background-color: rgba(14, 165, 233, 0.4); animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
-        <div style="width: 16px; height: 16px; border-radius: 9999px; background-color: #0284c7; border: 2.5px solid #ffffff; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2);"></div>
+      <div style="position: relative; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;">
+        <div style="position: absolute; width: 34px; height: 34px; border-radius: 9999px; background-color: rgba(14, 165, 233, 0.45); animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+        <div style="width: 18px; height: 18px; border-radius: 9999px; background-color: #0284c7; border: 3px solid #ffffff; box-shadow: 0 0 16px rgba(14, 165, 233, 0.8), 0 4px 6px -1px rgba(0,0,0,0.4);"></div>
       </div>
     `,
-    iconSize: [28, 28],
-    iconAnchor: [14, 14],
+    iconSize: [34, 34],
+    iconAnchor: [17, 17],
   });
 };
 
-// Create custom color-coded Hospital Pin DivIcon
+// Hospital Radar Pin with High Contrast Satellite Glow
 const createHospitalIcon = (hospital, isSelected) => {
   const generalAvail = hospital.capacitySummary?.general?.available || 0;
   const icuAvail = hospital.capacitySummary?.icu?.available || 0;
@@ -38,40 +81,43 @@ const createHospitalIcon = (hospital, isSelected) => {
   const freshnessState = hospital.freshness?.state;
 
   let bgColor = '#10b981'; // Green: Good
-  let label = 'Available';
+  let glowColor = 'rgba(16, 185, 129, 0.7)';
 
   if (!emergency && generalAvail === 0 && icuAvail === 0) {
     bgColor = '#e11d48'; // Red: Full
-    label = 'Full';
+    glowColor = 'rgba(225, 29, 72, 0.7)';
   } else if (generalAvail <= 5 && icuAvail <= 1) {
     bgColor = '#f59e0b'; // Yellow: Limited
-    label = 'Limited';
+    glowColor = 'rgba(245, 158, 11, 0.7)';
   }
 
   if (freshnessState === 'outdated') {
     bgColor = '#64748b'; // Grey: Outdated
+    glowColor = 'rgba(100, 116, 139, 0.5)';
   }
 
-  const border = isSelected ? '3px solid #0f172a' : '2px solid #ffffff';
-  const scale = isSelected ? 'scale(1.2)' : 'scale(1)';
+  const border = isSelected ? '3px solid #ffffff' : '2px solid #0f172a';
+  const scale = isSelected ? 'scale(1.22)' : 'scale(1)';
+  const pulseClass = isSelected ? 'animate-pulse' : '';
 
   return L.divIcon({
-    className: 'custom-hospital-pin',
+    className: 'custom-hospital-satellite-pin',
     html: `
-      <div style="transform: ${scale}; transition: all 0.2s ease; cursor: pointer; display: flex; flex-direction: column; align-items: center;">
+      <div style="transform: ${scale}; transition: all 0.25s ease; cursor: pointer; display: flex; flex-direction: column; align-items: center;" class="${pulseClass}">
         <div style="
-          background-color: ${bgColor};
+          background: ${bgColor};
           color: #ffffff;
-          padding: 4px 8px;
+          padding: 5px 9px;
           border-radius: 9999px;
           border: ${border};
-          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.25);
+          box-shadow: 0 0 14px ${glowColor}, 0 10px 20px -3px rgba(0, 0, 0, 0.6);
           display: flex;
           align-items: center;
-          gap: 4px;
-          font-family: sans-serif;
+          gap: 5px;
+          font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
           font-size: 11px;
-          font-weight: 700;
+          font-weight: 800;
+          letter-spacing: -0.01em;
           white-space: nowrap;
         ">
           <svg style="width: 13px; height: 13px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -82,15 +128,16 @@ const createHospitalIcon = (hospital, isSelected) => {
         <div style="
           width: 0; 
           height: 0; 
-          border-left: 5px solid transparent;
-          border-right: 5px solid transparent;
-          border-top: 6px solid ${bgColor};
+          border-left: 6px solid transparent;
+          border-right: 6px solid transparent;
+          border-top: 7px solid ${bgColor};
           margin-top: -1px;
+          filter: drop-shadow(0 3px 2px rgba(0,0,0,0.5));
         "></div>
       </div>
     `,
-    iconSize: [80, 36],
-    iconAnchor: [40, 34],
+    iconSize: [86, 38],
+    iconAnchor: [43, 36],
   });
 };
 
@@ -102,8 +149,12 @@ const HospitalMap = ({
   center = [28.6139, 77.2090], // Delhi default
   zoom = 12,
   onLocateMe,
+  className = '',
+  height = '500px',
 }) => {
   const mapRef = useRef(null);
+  const [currentStyleKey, setCurrentStyleKey] = useState('satellite'); // Default: Satellite Hybrid!
+  const currentStyle = MAP_STYLES[currentStyleKey] || MAP_STYLES.satellite;
 
   const activeCenter = selectedHospital?.location?.coordinates
     ? [selectedHospital.location.coordinates[1], selectedHospital.location.coordinates[0]]
@@ -111,30 +162,48 @@ const HospitalMap = ({
     ? [userLocation.lat, userLocation.lng]
     : center;
 
+  const totalAvailableBeds = hospitals.reduce(
+    (acc, h) => acc + (h.capacitySummary?.general?.available || 0) + (h.capacitySummary?.icu?.available || 0),
+    0
+  );
+
   return (
-    <div className="relative w-full h-full min-h-[420px] rounded-2xl overflow-hidden shadow-inner border border-slate-200/90 bg-slate-100">
+    <div
+      className={`relative w-full rounded-3xl overflow-hidden shadow-2xl border border-slate-800/40 bg-slate-950 font-sans select-none ${className}`}
+      style={{ height }}
+    >
       <MapContainer
         center={activeCenter}
         zoom={zoom}
         scrollWheelZoom={true}
         ref={mapRef}
-        style={{ width: '100%', height: '100%', minHeight: '420px' }}
+        style={{ width: '100%', height: '100%', minHeight: '380px' }}
       >
-        <MapRecenter center={activeCenter} zoom={zoom} />
-
-        {/* High-Performance OpenStreetMap Tiles */}
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        <MapCameraController
+          center={activeCenter}
+          zoom={zoom}
+          selectedHospital={selectedHospital}
         />
 
-        {/* User Location Marker */}
+        {/* MapTiler Satellite / Street Tiles */}
+        <TileLayer
+          key={currentStyleKey}
+          attribution={currentStyle.attribution}
+          url={currentStyle.url}
+          maxZoom={currentStyle.maxZoom}
+          tileSize={currentStyle.tileSize || 256}
+          zoomOffset={currentStyle.zoomOffset || 0}
+        />
+
+        {/* User Location Radar Marker */}
         {userLocation && (
           <Marker position={[userLocation.lat, userLocation.lng]} icon={createUserIcon()}>
             <Popup>
-              <div className="p-2 text-center">
-                <p className="font-bold text-xs text-sky-700">📍 You Are Here</p>
-                <p className="text-[10px] text-slate-500">Searching nearby emergency & general care</p>
+              <div className="p-2.5 text-center font-sans">
+                <p className="font-extrabold text-xs text-sky-600 flex items-center justify-center gap-1">
+                  <Navigation className="w-3.5 h-3.5" /> You Are Here
+                </p>
+                <p className="text-[11px] text-slate-500 mt-0.5">Live GPS coordinate lock</p>
               </div>
             </Popup>
           </Marker>
@@ -157,7 +226,7 @@ const HospitalMap = ({
                 },
               }}
             >
-              <Popup className="hospital-radar-popup">
+              <Popup className="hospital-radar-satellite-popup">
                 <div className="p-3 max-w-[280px] space-y-2.5 font-sans">
                   <div className="flex items-start justify-between gap-2">
                     <div>
@@ -227,31 +296,67 @@ const HospitalMap = ({
         })}
       </MapContainer>
 
-      {/* Locate Me Floating Action Button */}
-      {onLocateMe && (
-        <button
-          type="button"
-          onClick={onLocateMe}
-          className="absolute top-4 right-4 z-[1000] bg-white text-slate-800 hover:bg-sky-50 hover:text-sky-700 px-3 py-2 rounded-xl shadow-lg border border-slate-200 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
-        >
-          <Navigation className="w-4 h-4 text-sky-600" />
-          <span>Locate Me</span>
-        </button>
-      )}
+      {/* TOP FLOATING CONTROLS: Map Style Selector & Locate Me */}
+      <div className="absolute top-3.5 left-3.5 right-3.5 z-[1000] flex items-center justify-between pointer-events-none">
+        {/* Map Style Pills */}
+        <div className="flex items-center gap-1 bg-slate-950/85 backdrop-blur-md p-1 rounded-2xl border border-white/15 shadow-xl pointer-events-auto">
+          {Object.values(MAP_STYLES).map((style) => (
+            <button
+              key={style.id}
+              type="button"
+              onClick={() => setCurrentStyleKey(style.id)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                currentStyleKey === style.id
+                  ? 'bg-sky-500 text-white shadow-md shadow-sky-500/30'
+                  : 'text-slate-300 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              {style.label}
+            </button>
+          ))}
+        </div>
 
-      {/* Map Legend */}
-      <div className="absolute bottom-4 left-4 z-[1000] bg-white/95 backdrop-blur-sm p-2.5 rounded-xl shadow-md border border-slate-200 text-[11px] font-semibold text-slate-700 space-y-1">
-        <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Capacity Status</p>
-        <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Available (&gt;5)
+        {/* Locate Me Button */}
+        {onLocateMe && (
+          <button
+            type="button"
+            onClick={onLocateMe}
+            className="pointer-events-auto bg-slate-950/85 backdrop-blur-md hover:bg-slate-900 text-white hover:text-sky-300 px-3.5 py-1.5 rounded-2xl shadow-xl border border-white/15 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+            title="Locate my position on Satellite Map"
+          >
+            <Navigation className="w-3.5 h-3.5 text-sky-400" />
+            <span className="hidden sm:inline">Locate Me</span>
+          </button>
+        )}
+      </div>
+
+      {/* BOTTOM FLOATING BAR: Capacity Legend & Real-Time Stats */}
+      <div className="absolute bottom-3.5 left-3.5 right-3.5 z-[1000] flex items-center justify-between pointer-events-none flex-wrap gap-2">
+        {/* Map Legend */}
+        <div className="pointer-events-auto bg-slate-950/85 backdrop-blur-md px-3.5 py-2 rounded-2xl shadow-xl border border-white/15 text-[11px] font-semibold text-slate-200 flex items-center gap-3.5">
+          <span className="text-[10px] uppercase tracking-wider text-slate-400 font-extrabold hidden sm:inline">
+            Status:
           </span>
-          <span className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span> Limited (1-5)
+          <span className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span>
+            <span>Available (&gt;5)</span>
           </span>
-          <span className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-rose-600"></span> Full (0)
+          <span className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]"></span>
+            <span>Limited (1-5)</span>
           </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-rose-600 shadow-[0_0_8px_rgba(225,29,72,0.8)]"></span>
+            <span>Full (0)</span>
+          </span>
+        </div>
+
+        {/* Live Active Satellite Badge */}
+        <div className="pointer-events-auto bg-slate-950/85 backdrop-blur-md px-3.5 py-2 rounded-2xl shadow-xl border border-white/15 text-[11px] font-bold text-white flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+          <span>{hospitals.length} Hospitals</span>
+          <span className="text-slate-400">•</span>
+          <span className="text-sky-400">{totalAvailableBeds} Beds Free</span>
         </div>
       </div>
     </div>

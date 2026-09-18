@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
+import useGeolocation from '../../hooks/useGeolocation';
 import socket from '../../services/socket';
 import HospitalMap from '../../components/map/HospitalMap';
 import HospitalCard from '../../components/hospital/HospitalCard';
@@ -42,21 +43,18 @@ const ExploreHospitalsPage = () => {
   const [emergencyOnly, setEmergencyOnly] = useState(false);
   const [sortBy, setSortBy] = useState('distance');
 
-  // Geolocation state — null = not yet resolved
-  const [userLocation, setUserLocation] = useState(null);
-  const [locationName, setLocationName] = useState('Detecting location...');
-  const [locationSource, setLocationSource] = useState(''); // 'gps' | 'ip' | 'default'
-  const [locating, setLocating] = useState(false);
+  // ── Geolocation via shared hook (GPS → ipapi.co → Delhi default) ──
+  const { location: userLocation, locationName, locationSource, locating, detectLocation } = useGeolocation();
 
   const [mobileTab, setMobileTab] = useState('list');
   const [showEmergencyModal, setShowEmergencyModal] = useState(false);
 
-  // --- Detect location once on mount, then trigger fetch ---
+  // Trigger location detection once on mount
   useEffect(() => {
     detectLocation();
   }, []);
 
-  // fetchNearby only after userLocation is resolved (not null)
+  // Fetch hospitals only after location is resolved (not null)
   useEffect(() => {
     if (userLocation !== null) {
       fetchNearby();
@@ -88,63 +86,6 @@ const ExploreHospitalsPage = () => {
       socket.off('hospital:availability_updated');
     };
   }, []);
-
-  // Step 1: Try precise GPS → Step 2: IP-based fallback → Step 3: Default Delhi
-  const detectLocation = () => {
-    setLocating(true);
-    setLocationName('Detecting location...');
-
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-          setUserLocation({ lat, lng });
-          setLocationName('📍 Your Live GPS Location');
-          setLocationSource('gps');
-          setLocating(false);
-          toast.success('📍 Live GPS location acquired!');
-        },
-        async (err) => {
-          console.warn('GPS denied/failed:', err.message, '— trying IP fallback...');
-          // Step 2: IP-based geolocation (ipapi.co — free, no API key)
-          await fetchIpLocation();
-        },
-        { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
-      );
-    } else {
-      // Browser doesn't support geolocation at all
-      fetchIpLocation();
-    }
-  };
-
-  const fetchIpLocation = async () => {
-    try {
-      const response = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(6000) });
-      if (!response.ok) throw new Error('ipapi fetch failed');
-      const data = await response.json();
-      if (data.latitude && data.longitude) {
-        const lat = parseFloat(data.latitude);
-        const lng = parseFloat(data.longitude);
-        setUserLocation({ lat, lng });
-        const city = data.city || data.region || 'Your City';
-        setLocationName(`📡 ${city} (IP Location)`);
-        setLocationSource('ip');
-        setLocating(false);
-        toast.success(`📡 Location detected via network: ${city}`);
-        return;
-      }
-      throw new Error('No lat/lng from ipapi');
-    } catch (ipErr) {
-      console.warn('IP geolocation failed:', ipErr.message, '— using default Delhi fallback');
-      // Step 3: Hard fallback to New Delhi
-      setUserLocation({ lat: 28.6139, lng: 77.2090 });
-      setLocationName('🏙️ New Delhi (Default)');
-      setLocationSource('default');
-      setLocating(false);
-      toast('📍 Could not detect location — showing New Delhi hospitals.', { icon: 'ℹ️' });
-    }
-  };
 
   const fetchNearby = async (retryCount = 0) => {
     setLoading(true);

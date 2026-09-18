@@ -58,8 +58,8 @@ const HospitalSchema = new mongoose.Schema(
     },
     hospitalType: {
       type: String,
-      enum: ['Multi-Specialty', 'Super-Specialty', 'Government', 'Private Clinic', 'Trauma Center', 'General Hospital'],
       default: 'Multi-Specialty',
+      trim: true,
     },
     licenseNumber: {
       type: String,

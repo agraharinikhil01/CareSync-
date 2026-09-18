@@ -71,6 +71,13 @@ exports.getNearbyHospitals = async (req, res) => {
 
       hospitals = await Hospital.find(query).limit(50).lean();
 
+      // If no hospitals within strict radius, search across India and find the nearest facilities
+      if (hospitals.length === 0) {
+        const fallbackQuery = { ...query };
+        delete fallbackQuery.location;
+        hospitals = await Hospital.find(fallbackQuery).lean();
+      }
+
       // Compute exact distance and driving time for each hospital
       hospitals = hospitals.map((h) => {
         const [hLng, hLat] = h.location.coordinates;
@@ -110,7 +117,7 @@ exports.getNearbyHospitals = async (req, res) => {
           freshness,
           matchReasons,
         };
-      });
+      }).sort((a, b) => (a.distanceKm || 999) - (b.distanceKm || 999)).slice(0, 50);
     } else {
       // Fallback if no location coordinates provided
       hospitals = await Hospital.find(query).sort({ rating: -1 }).limit(50).lean();

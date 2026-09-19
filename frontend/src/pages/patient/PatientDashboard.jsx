@@ -28,6 +28,7 @@ import {
   ChevronDown,
   Activity,
   Layers,
+  Navigation,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 

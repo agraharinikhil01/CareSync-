@@ -1,11 +1,11 @@
-import { Loader } from '@googlemaps/js-api-loader';
+import { setOptions, importLibrary } from '@googlemaps/js-api-loader';
 
 // Robust fallback: Uses VITE_GOOGLE_MAPS_API_KEY from env, or bundled fallback key for production Vercel
 const GOOGLE_MAPS_KEY =
   import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyAOVYRIgupAurZup5y1PRh8Ismb1A3lLao';
 
-let loaderInstance = null;
-let googlePromise = null;
+let mapsLoaded = false;
+let loadPromise = null;
 
 /**
  * Checks whether Google Maps API Key is provided
@@ -20,37 +20,47 @@ export const isGoogleMapsConfigured = () => {
 export const getGoogleMapsApiKey = () => GOOGLE_MAPS_KEY;
 
 /**
- * Singleton Google Maps Platform loader
- * Loads Maps JavaScript API, Places library, and Geometry
+ * Singleton Google Maps Platform loader using new v2.x functional API
+ * Uses setOptions() + importLibrary() instead of deprecated Loader class
  */
 export const loadGoogleMaps = () => {
   if (!isGoogleMapsConfigured()) {
     return Promise.reject(new Error('GOOGLE_MAPS_KEY_MISSING'));
   }
 
-  if (typeof window !== 'undefined' && window.google && window.google.maps) {
+  // Already loaded — return immediately
+  if (typeof window !== 'undefined' && window.google && window.google.maps && mapsLoaded) {
     return Promise.resolve(window.google);
   }
 
-  if (!googlePromise) {
-    loaderInstance = new Loader({
-      apiKey: GOOGLE_MAPS_KEY,
-      version: 'weekly',
-      libraries: ['places', 'geometry'],
-    });
-
-    googlePromise = loaderInstance
-      .load()
-      .then(() => {
-        return window.google;
-      })
-      .catch((err) => {
-        googlePromise = null; // allow retry
-        throw err;
-      });
+  // Return existing load promise if in progress
+  if (loadPromise) {
+    return loadPromise;
   }
 
-  return googlePromise;
+  loadPromise = (async () => {
+    try {
+      // Configure the loader with API key and libraries
+      setOptions({
+        apiKey: GOOGLE_MAPS_KEY,
+        version: 'weekly',
+        libraries: ['places', 'geometry'],
+      });
+
+      // Import the core Maps library (this loads the Google Maps script)
+      await importLibrary('maps');
+      // Import Places library
+      await importLibrary('places');
+
+      mapsLoaded = true;
+      return window.google;
+    } catch (err) {
+      loadPromise = null; // allow retry
+      throw err;
+    }
+  })();
+
+  return loadPromise;
 };
 
 /**
@@ -180,3 +190,5 @@ export const calculateDirections = async (origin, destination) => {
     );
   });
 };
+
+

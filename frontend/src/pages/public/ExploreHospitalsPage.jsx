@@ -64,6 +64,72 @@ const ExploreHospitalsPage = () => {
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
 
+  // Autocomplete state
+  const [searchSuggestions, setSearchSuggestions] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchContainerRef = useRef(null);
+
+  // Click outside listener for search suggestions
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Debounced Live Autocomplete Search across all 2,600+ hospitals in India
+  useEffect(() => {
+    if (!searchQuery || searchQuery.trim().length < 2) {
+      setSearchSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    let isCurrent = true;
+    setIsSearching(true);
+    const timer = setTimeout(async () => {
+      try {
+        const params = {
+          q: searchQuery.trim(),
+          ...(userLocation?.lat && { lat: userLocation.lat, lng: userLocation.lng }),
+        };
+        const res = await api.get('/hospitals/search', { params });
+        if (isCurrent && res.data.success) {
+          setSearchSuggestions(res.data.data || []);
+          setShowSuggestions(true);
+        }
+      } catch (err) {
+        console.warn('Autocomplete search error:', err);
+      } finally {
+        if (isCurrent) setIsSearching(false);
+      }
+    }, 200);
+
+    return () => {
+      isCurrent = false;
+      clearTimeout(timer);
+    };
+  }, [searchQuery, userLocation]);
+
+  const handleSelectHospitalOption = (hosp) => {
+    setShowSuggestions(false);
+    setSelectedHospital(hosp);
+    setShowDetailModal(true);
+
+    // Prepend to hospitals list so its marker and card appear immediately
+    setHospitals((prev) => {
+      const exists = prev.some((h) => h._id === hosp._id);
+      if (!exists) {
+        return [hosp, ...prev];
+      }
+      return prev;
+    });
+  };
+
   // Trigger location detection once on mount
   useEffect(() => {
     detectLocation();
@@ -228,15 +294,100 @@ const ExploreHospitalsPage = () => {
         {/* Search, GPS Location & Filters Bar */}
         <div className="bg-white rounded-3xl border border-slate-200/90 p-4 shadow-sm space-y-3">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-            <div className="relative flex-1">
+            {/* Search Input with Live Autocomplete Suggestions */}
+            <div ref={searchContainerRef} className="relative flex-1">
               <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
-                placeholder="Search hospitals by name, area, specialty (Cardiology, ICU)..."
+                placeholder="Search any hospital (e.g. Apollo, AIIMS, Surya), specialty or city..."
                 value={searchQuery}
+                onFocus={() => {
+                  if (searchSuggestions.length > 0) setShowSuggestions(true);
+                }}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 rounded-2xl border border-slate-200 bg-slate-50/70 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    if (searchSuggestions.length > 0) {
+                      handleSelectHospitalOption(searchSuggestions[0]);
+                    }
+                  }
+                }}
+                className="w-full pl-9 pr-9 py-2.5 rounded-2xl border border-slate-200 bg-slate-50/70 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-inner"
               />
+              {isSearching && (
+                <div className="absolute right-3.5 top-1/2 -translate-y-1/2">
+                  <div className="w-3.5 h-3.5 border-2 border-sky-600 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              )}
+
+              {/* Floating Autocomplete Dropdown */}
+              {showSuggestions && (
+                <div className="absolute top-full left-0 right-0 mt-2 z-50 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden max-h-96 overflow-y-auto divide-y divide-slate-100">
+                  <div className="p-2.5 bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 flex items-center justify-between">
+                    <span>
+                      {searchSuggestions.length > 0
+                        ? `Found ${searchSuggestions.length} hospitals for "${searchQuery}"`
+                        : 'Searching hospitals...'}
+                    </span>
+                    <span className="text-[10px] text-slate-400">Click to view location &amp; doctors</span>
+                  </div>
+
+                  {searchSuggestions.length === 0 ? (
+                    <div className="p-6 text-center text-xs text-slate-500">
+                      No hospitals found matching "{searchQuery}". Try searching "Apollo", "AIIMS", or "District Hospital".
+                    </div>
+                  ) : (
+                    searchSuggestions.map((hosp) => (
+                      <div
+                        key={hosp._id}
+                        onClick={() => handleSelectHospitalOption(hosp)}
+                        className="p-3 hover:bg-sky-50/80 cursor-pointer transition-colors flex items-start justify-between gap-3 group"
+                      >
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="text-xs font-black text-slate-900 group-hover:text-sky-600 transition-colors">
+                              {hosp.name}
+                            </h4>
+                            <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-600 uppercase border border-slate-200">
+                              {hosp.hospitalType || 'Hospital'}
+                            </span>
+                            {hosp.emergencyAvailable && (
+                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200">
+                                🚨 Emergency Active
+                              </span>
+                            )}
+                          </div>
+
+                          <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                            📍 {hosp.address}, {hosp.city}, {hosp.state}
+                          </p>
+
+                          <div className="flex items-center gap-3 mt-1 text-[10px] text-slate-400 font-medium">
+                            <span>
+                              🛏️ General: <strong className="text-slate-700">{hosp.capacitySummary?.general?.available || 0}</strong> beds
+                            </span>
+                            <span>
+                              ❤️ ICU: <strong className="text-slate-700">{hosp.capacitySummary?.icu?.available || 0}</strong> beds
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Distance Badge */}
+                        <div className="text-right shrink-0">
+                          {hosp.distanceKm !== null && hosp.distanceKm !== undefined && (
+                            <span className="text-xs font-black text-sky-700 bg-sky-50 border border-sky-200 px-2 py-0.5 rounded-lg block">
+                              {hosp.distanceKm < 0.1 ? '< 100 m' : `${hosp.distanceKm} km`}
+                            </span>
+                          )}
+                          <span className="text-[9px] font-bold text-sky-600 group-hover:underline mt-1 block">
+                            View On Map &rarr;
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-2 flex-wrap text-xs">

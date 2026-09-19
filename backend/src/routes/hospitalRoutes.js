@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const {
   getNearbyHospitals,
+  searchHospitals,
   getHospitals,
   getHospitalById,
   createHospital,
@@ -14,6 +15,7 @@ const {
 const { protect, authorize } = require('../middleware/authMiddleware');
 
 // Public Discovery & Listing
+router.get('/search', searchHospitals);
 router.get('/nearby', getNearbyHospitals);
 router.get('/', getHospitals);
 router.get('/:id', getHospitalById);

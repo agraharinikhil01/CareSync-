@@ -356,6 +356,94 @@ exports.getHospitals = async (req, res) => {
   }
 };
 
+// @desc    Fast Autocomplete & Nationwide Hospital Search
+// @route   GET /api/hospitals/search
+// @access  Public
+exports.searchHospitals = async (req, res) => {
+  try {
+    const { q, lat, lng, limit = 12 } = req.query;
+
+    if (!q || !q.trim()) {
+      return res.json({ success: true, data: [] });
+    }
+
+    const term = q.trim();
+    const regex = new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+
+    const query = {
+      verificationStatus: { $in: ['VERIFIED', 'PENDING'] },
+      $or: [
+        { name: regex },
+        { city: regex },
+        { state: regex },
+        { address: regex },
+        { departments: regex },
+        { hospitalType: regex },
+      ],
+    };
+
+    let hospitals = await Hospital.find(query)
+      .limit(parseInt(limit, 10) || 12)
+      .lean();
+
+    const userLat = lat && !isNaN(parseFloat(lat)) ? parseFloat(lat) : null;
+    const userLng = lng && !isNaN(parseFloat(lng)) ? parseFloat(lng) : null;
+
+    hospitals = hospitals.map((h) => {
+      let distanceKm = null;
+      let estTravelMinutes = null;
+
+      if (userLat !== null && userLng !== null && h.location?.coordinates?.length >= 2) {
+        const [hLng, hLat] = h.location.coordinates;
+        const R = 6371; // km
+        const dLat = ((hLat - userLat) * Math.PI) / 180;
+        const dLng = ((hLng - userLng) * Math.PI) / 180;
+        const a =
+          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos((userLat * Math.PI) / 180) *
+            Math.cos((hLat * Math.PI) / 180) *
+            Math.sin(dLng / 2) *
+            Math.sin(dLng / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        const straightLineKm = R * c;
+        const correctionFactor = straightLineKm < 0.2 ? 1.1 : 1.3;
+        distanceKm = Math.round(straightLineKm * correctionFactor * 10) / 10;
+        estTravelMinutes =
+          distanceKm < 0.2 ? 1 :
+          distanceKm < 1.0 ? Math.max(2, Math.round(distanceKm * 3)) :
+          Math.max(3, Math.round(distanceKm * 2.5));
+      }
+
+      return {
+        ...h,
+        distanceKm,
+        estTravelMinutes,
+        freshness: calculateFreshness(h.lastStatusUpdate),
+      };
+    });
+
+    // Sort: prefix name matches first, then nearest distance
+    hospitals.sort((a, b) => {
+      const aStarts = a.name?.toLowerCase().startsWith(term.toLowerCase());
+      const bStarts = b.name?.toLowerCase().startsWith(term.toLowerCase());
+      if (aStarts && !bStarts) return -1;
+      if (!aStarts && bStarts) return 1;
+      if (a.distanceKm !== null && b.distanceKm !== null) {
+        return a.distanceKm - b.distanceKm;
+      }
+      return 0;
+    });
+
+    res.json({
+      success: true,
+      count: hospitals.length,
+      data: hospitals,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // @desc    Get single hospital profile with beds, departments, doctors
 // @route   GET /api/hospitals/:id
 // @access  Public

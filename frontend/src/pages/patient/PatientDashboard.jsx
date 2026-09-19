@@ -54,6 +54,7 @@ const PatientDashboard = () => {
   const [emergencyOnly, setEmergencyOnly] = useState(false);
   const [minBeds, setMinBeds] = useState('');
   const [minIcu, setMinIcu] = useState('');
+  const [selectedRadius, setSelectedRadius] = useState(15);
   const [sortBy, setSortBy] = useState('distance');
 
   // ── Geolocation via shared hook (GPS → ipapi.co → Google Places / Manual Search → Delhi default) ──
@@ -85,7 +86,7 @@ const PatientDashboard = () => {
     if (userLocation !== null) {
       fetchNearbyHospitals();
     }
-  }, [userLocation, selectedSpecialty, emergencyOnly]);
+  }, [userLocation, selectedSpecialty, emergencyOnly, selectedRadius, minBeds, minIcu]);
 
   // Real-time Socket.IO Listener for instant hospital updates
   useEffect(() => {
@@ -121,7 +122,7 @@ const PatientDashboard = () => {
       const params = {
         lat: userLocation.lat,
         lng: userLocation.lng,
-        radius: 35, // km
+        radius: selectedRadius, // km
         ...(selectedSpecialty !== 'All Specialties' && { specialty: selectedSpecialty }),
         ...(emergencyOnly && { emergencyOnly: 'true' }),
         ...(minBeds && { minBeds }),
@@ -160,7 +161,7 @@ const PatientDashboard = () => {
     })
     .sort((a, b) => {
       if (sortBy === 'distance') {
-        return (a.distanceKm || 999) - (b.distanceKm || 999);
+        return (a.distanceKm ?? 999) - (b.distanceKm ?? 999);
       }
       if (sortBy === 'availability') {
         const aAvail = (a.capacitySummary?.general?.available || 0) + (a.capacitySummary?.icu?.available || 0);
@@ -270,6 +271,21 @@ const PatientDashboard = () => {
           {/* Expandable Filter Bar */}
           {showFilters && (
             <div className="pt-3 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs animate-fadeIn">
+              {/* Radius Selector */}
+              <div>
+                <label className="font-bold text-slate-500 block mb-1">Max Distance Radius</label>
+                <select
+                  value={selectedRadius}
+                  onChange={(e) => setSelectedRadius(Number(e.target.value))}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-semibold text-slate-800 focus:ring-2 focus:ring-sky-500 focus:outline-none"
+                >
+                  <option value={10}>Within 10 km (Local Area)</option>
+                  <option value={15}>Within 15 km (District)</option>
+                  <option value={35}>Within 35 km (Extended)</option>
+                  <option value={60}>Within 60 km (Regional)</option>
+                </select>
+              </div>
+
               {/* Specialty Selector */}
               <div>
                 <label className="font-bold text-slate-500 block mb-1">Specialty / Department</label>

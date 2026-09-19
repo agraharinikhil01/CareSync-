@@ -18,6 +18,7 @@ import {
   Route,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import HospitalMap from './HospitalMap';
 
 // Custom SVG Icons generator for Google Maps
 const getHospitalMarkerSvg = (hospital, isSelected) => {
@@ -350,34 +351,22 @@ const GoogleHospitalMap = ({
     }
   };
 
-  // Fallback State: API Key missing or load error
+  // Seamless Auto-Fallback: If Google Maps key or script encounters an issue, render the high-res Satellite Radar Map
   if (errorState) {
     return (
-      <div
-        className={`w-full rounded-3xl bg-slate-900 border border-slate-800 text-white flex flex-col items-center justify-center p-6 text-center space-y-3 ${className}`}
-        style={{ height }}
-      >
-        <div className="w-12 h-12 rounded-2xl bg-rose-500/20 text-rose-400 flex items-center justify-center">
-          <AlertTriangle className="w-6 h-6" />
-        </div>
-        <div className="max-w-md space-y-1">
-          <h3 className="font-extrabold text-base text-slate-100">
-            {errorState === 'KEY_MISSING' ? 'Google Maps API Key Required' : 'Google Maps Could Not Load'}
-          </h3>
-          <p className="text-xs text-slate-400 leading-relaxed">
-            {errorState === 'KEY_MISSING'
-              ? 'Please configure VITE_GOOGLE_MAPS_API_KEY in frontend/.env to enable high-resolution satellite imagery, live places discovery, and routing.'
-              : 'Network or referrer restriction prevented Google Maps from loading. You can still explore all hospitals in the list directly below!'}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 pt-2">
-          <button
-            type="button"
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
-          >
-            <RefreshCw className="w-3.5 h-3.5" /> Retry
-          </button>
+      <div className={`relative w-full rounded-3xl overflow-hidden shadow-2xl ${className}`} style={{ height }}>
+        <HospitalMap
+          hospitals={hospitals}
+          userLocation={userLocation}
+          selectedHospital={selectedHospital}
+          onSelectHospital={onSelectHospital}
+          onLocateMe={onLocateMe}
+          onMapClick={onMapClick}
+          height="100%"
+        />
+        <div className="absolute top-16 left-3.5 z-[1000] bg-slate-950/85 backdrop-blur-md px-3 py-1 rounded-2xl border border-white/20 text-[10px] font-bold text-sky-400 flex items-center gap-1.5 shadow-xl">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span>🛰️ Satellite Radar Map Active</span>
         </div>
       </div>
     );

@@ -92,14 +92,16 @@ exports.getNearbyHospitals = async (req, res) => {
             Math.sin(dLng / 2) *
             Math.sin(dLng / 2);
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        const distanceKm = Math.round(R * c * 10) / 10;
-        const estTravelMinutes = Math.max(3, Math.round(distanceKm * 2.8));
+        const rawDistance = R * c;
+        const distanceKm = Math.round(rawDistance * 10) / 10;
+        const estTravelMinutes = distanceKm < 0.2 ? 1 : Math.max(1, Math.round(distanceKm * 2.2));
 
         const freshness = calculateFreshness(h.lastStatusUpdate);
 
         // Transparent match reasons
         const matchReasons = [];
-        matchReasons.push(`${distanceKm} km away (~${estTravelMinutes} min)`);
+        const distLabel = distanceKm < 0.1 ? 'Nearby (~100m)' : `${distanceKm} km away`;
+        matchReasons.push(`${distLabel} (~${estTravelMinutes} min)`);
         if (h.capacitySummary?.icu?.available > 0) {
           matchReasons.push(`${h.capacitySummary.icu.available} ICU beds available`);
         }
@@ -117,7 +119,7 @@ exports.getNearbyHospitals = async (req, res) => {
           freshness,
           matchReasons,
         };
-      }).sort((a, b) => (a.distanceKm || 999) - (b.distanceKm || 999)).slice(0, 50);
+      }).sort((a, b) => (a.distanceKm ?? 999) - (b.distanceKm ?? 999)).slice(0, 50);
     } else {
       // Fallback if no location coordinates provided
       hospitals = await Hospital.find(query).sort({ rating: -1 }).limit(50).lean();

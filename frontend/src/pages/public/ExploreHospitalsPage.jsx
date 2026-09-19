@@ -42,6 +42,7 @@ const ExploreHospitalsPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSpecialty, setSelectedSpecialty] = useState('All Specialties');
   const [emergencyOnly, setEmergencyOnly] = useState(false);
+  const [selectedRadius, setSelectedRadius] = useState(15); // default 15 km to focus on local hospitals
   const [sortBy, setSortBy] = useState('distance');
 
   // ── Geolocation via shared hook (GPS → ipapi.co → Google Places / Manual Search → Delhi default) ──
@@ -70,7 +71,7 @@ const ExploreHospitalsPage = () => {
     if (userLocation !== null) {
       fetchNearby();
     }
-  }, [userLocation, selectedSpecialty, emergencyOnly]);
+  }, [userLocation, selectedSpecialty, emergencyOnly, selectedRadius]);
 
   useEffect(() => {
     socket.on('hospital:availability_updated', (data) => {
@@ -104,7 +105,7 @@ const ExploreHospitalsPage = () => {
       const params = {
         lat: userLocation.lat,
         lng: userLocation.lng,
-        radius: 35,
+        radius: selectedRadius,
         ...(selectedSpecialty !== 'All Specialties' && { specialty: selectedSpecialty }),
         ...(emergencyOnly && { emergencyOnly: 'true' }),
         ...(searchQuery && { search: searchQuery }),
@@ -136,7 +137,7 @@ const ExploreHospitalsPage = () => {
   const handleCardSelect = (hosp) => {
     setSelectedHospital(hosp);
     if (mapSectionRef.current) {
-      mapSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      mapSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   };
 
@@ -169,7 +170,7 @@ const ExploreHospitalsPage = () => {
       return true;
     })
     .sort((a, b) => {
-      if (sortBy === 'distance') return (a.distanceKm || 999) - (b.distanceKm || 999);
+      if (sortBy === 'distance') return (a.distanceKm ?? 999) - (b.distanceKm ?? 999);
       if (sortBy === 'availability') {
         const aAvail = (a.capacitySummary?.general?.available || 0) + (a.capacitySummary?.icu?.available || 0);
         const bAvail = (b.capacitySummary?.general?.available || 0) + (b.capacitySummary?.icu?.available || 0);
@@ -247,6 +248,18 @@ const ExploreHospitalsPage = () => {
                 <span className="truncate max-w-[180px] sm:max-w-[240px]">{locating ? 'Locating...' : locationName}</span>
                 <span className="text-[10px] uppercase font-extrabold px-1.5 py-0.5 rounded-md bg-sky-200 text-sky-800 ml-1">Change</span>
               </button>
+
+              <select
+                value={selectedRadius}
+                onChange={(e) => setSelectedRadius(Number(e.target.value))}
+                className="px-3.5 py-2.5 rounded-2xl border border-slate-200 bg-white font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                title="Filter hospitals by maximum distance"
+              >
+                <option value={10}>Radius: 10 km (Local)</option>
+                <option value={15}>Radius: 15 km (District)</option>
+                <option value={35}>Radius: 35 km (Extended)</option>
+                <option value={60}>Radius: 60 km (All Regional)</option>
+              </select>
 
               <select
                 value={selectedSpecialty}

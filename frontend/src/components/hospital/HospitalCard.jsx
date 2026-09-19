@@ -75,10 +75,10 @@ const HospitalCard = ({ hospital, isSelected, onSelect }) => {
         {hospital.distanceKm !== null && hospital.distanceKm !== undefined && (
           <div className="text-right shrink-0">
             <span className="text-xs font-bold text-sky-700 bg-sky-50 border border-sky-200 px-2 py-0.5 rounded-lg">
-              {hospital.distanceKm} km
+              {hospital.distanceKm < 0.1 ? '< 100 m' : `${hospital.distanceKm} km`}
             </span>
             <p className="text-[10px] text-slate-400 font-medium mt-0.5">
-              ~{hospital.estTravelMinutes || 10} min
+              {hospital.distanceKm < 0.2 ? '< 1 min' : `~${hospital.estTravelMinutes || 1} min`}
             </p>
           </div>
         )}

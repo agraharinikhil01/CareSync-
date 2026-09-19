@@ -7,6 +7,7 @@ import socket from '../../services/socket';
 import DashboardLayout from '../../layouts/DashboardLayout';
 import GoogleHospitalMap from '../../components/map/GoogleHospitalMap';
 import HospitalCard from '../../components/hospital/HospitalCard';
+import HospitalDetailPanel from '../../components/hospital/HospitalDetailPanel';
 import EmergencyModal from '../../components/emergency/EmergencyModal';
 import LocationModal from '../../components/location/LocationModal';
 import {
@@ -75,6 +76,7 @@ const PatientDashboard = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [showEmergencyModal, setShowEmergencyModal] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
   const [lastLiveUpdate, setLastLiveUpdate] = useState(null);
 
   // Trigger location detection once on mount
@@ -374,7 +376,10 @@ const PatientDashboard = () => {
               hospitals={displayedHospitals}
               userLocation={userLocation}
               selectedHospital={selectedHospital}
-              onSelectHospital={(h) => setSelectedHospital(h)}
+              onSelectHospital={(h) => {
+                setSelectedHospital(h);
+                setShowDetailModal(true);
+              }}
               onLocateMe={() => detectLocation(true)}
               onMapClick={(lat, lng) => setManualLocation(lat, lng, '📍 Selected Location')}
               height="100%"
@@ -394,7 +399,7 @@ const PatientDashboard = () => {
                 </span>
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                Real-time bed counters, emergency capabilities, and one-click directions
+                Real-time bed counters, clinical departments, specialist doctors &amp; road distance
               </p>
             </div>
 
@@ -431,7 +436,10 @@ const PatientDashboard = () => {
                   key={hosp._id}
                   hospital={hosp}
                   isSelected={selectedHospital?._id === hosp._id}
-                  onSelect={(h) => setSelectedHospital(h)}
+                  onSelect={(h) => {
+                    setSelectedHospital(h);
+                    setShowDetailModal(true);
+                  }}
                 />
               ))}
             </div>
@@ -457,6 +465,15 @@ const PatientDashboard = () => {
         searchPlaces={searchPlaces}
         currentLocationName={locationName}
       />
+
+      {/* Rich Hospital Detail & Doctor Roster Modal */}
+      {showDetailModal && selectedHospital && (
+        <HospitalDetailPanel
+          hospital={selectedHospital}
+          userLocation={userLocation}
+          onClose={() => setShowDetailModal(false)}
+        />
+      )}
     </DashboardLayout>
   );
 };

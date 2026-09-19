@@ -5,6 +5,7 @@ import useGeolocation from '../../hooks/useGeolocation';
 import socket from '../../services/socket';
 import GoogleHospitalMap from '../../components/map/GoogleHospitalMap';
 import HospitalCard from '../../components/hospital/HospitalCard';
+import HospitalDetailPanel from '../../components/hospital/HospitalDetailPanel';
 import EmergencyModal from '../../components/emergency/EmergencyModal';
 import LocationModal from '../../components/location/LocationModal';
 import {
@@ -61,6 +62,7 @@ const ExploreHospitalsPage = () => {
   const [mobileTab, setMobileTab] = useState('list');
   const [showEmergencyModal, setShowEmergencyModal] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   // Trigger location detection once on mount
   useEffect(() => {
@@ -137,13 +139,12 @@ const ExploreHospitalsPage = () => {
 
   const handleCardSelect = (hosp) => {
     setSelectedHospital(hosp);
-    if (mapSectionRef.current) {
-      mapSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
+    setShowDetailModal(true);
   };
 
   const handleMapMarkerSelect = (hosp) => {
     setSelectedHospital(hosp);
+    setShowDetailModal(true);
   };
 
   const filteredHospitals = hospitals
@@ -477,6 +478,15 @@ const ExploreHospitalsPage = () => {
         searchPlaces={searchPlaces}
         currentLocationName={locationName}
       />
+
+      {/* Rich Hospital Detail & Doctor Roster Modal */}
+      {showDetailModal && selectedHospital && (
+        <HospitalDetailPanel
+          hospital={selectedHospital}
+          userLocation={userLocation}
+          onClose={() => setShowDetailModal(false)}
+        />
+      )}
     </div>
   );
 };

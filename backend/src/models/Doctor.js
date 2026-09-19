@@ -8,6 +8,12 @@ const DoctorSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
+    hospital: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Hospital',
+      index: true,
+      default: null,
+    },
     specialization: {
       type: String,
       required: [true, 'Please provide doctor specialization'],

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { Navigation, ExternalLink, Bed, HeartPulse, ShieldCheck, Clock, Layers, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -34,6 +34,18 @@ const MAP_STYLES = {
     tileSize: 512,
     zoomOffset: -1,
   },
+};
+
+// Map Click Listener to let users pinpoint exact custom location
+const MapClickHandler = ({ onMapClick }) => {
+  useMapEvents({
+    click(e) {
+      if (onMapClick && e?.latlng) {
+        onMapClick(e.latlng.lat, e.latlng.lng);
+      }
+    },
+  });
+  return null;
 };
 
 // Smooth Camera Controller with flyTo on selection & location update
@@ -149,6 +161,7 @@ const HospitalMap = ({
   center = [28.6139, 77.2090], // Delhi default
   zoom = 12,
   onLocateMe,
+  onMapClick,
   className = '',
   height = '500px',
 }) => {
@@ -185,6 +198,9 @@ const HospitalMap = ({
           selectedHospital={selectedHospital}
         />
 
+        {/* Map Click Listener to let user pinpoint exact location anywhere */}
+        {onMapClick && <MapClickHandler onMapClick={onMapClick} />}
+
         {/* MapTiler Satellite / Street Tiles */}
         <TileLayer
           key={currentStyleKey}
@@ -195,15 +211,27 @@ const HospitalMap = ({
           zoomOffset={currentStyle.zoomOffset || 0}
         />
 
-        {/* User Location Radar Marker */}
+        {/* User Location Radar Marker (Draggable) */}
         {userLocation && (
-          <Marker position={[userLocation.lat, userLocation.lng]} icon={createUserIcon()}>
+          <Marker
+            position={[userLocation.lat, userLocation.lng]}
+            icon={createUserIcon()}
+            draggable={Boolean(onMapClick)}
+            eventHandlers={{
+              dragend: (e) => {
+                const pos = e.target.getLatLng();
+                if (onMapClick) onMapClick(pos.lat, pos.lng);
+              },
+            }}
+          >
             <Popup>
               <div className="p-2.5 text-center font-sans">
                 <p className="font-extrabold text-xs text-sky-600 flex items-center justify-center gap-1">
-                  <Navigation className="w-3.5 h-3.5" /> You Are Here
+                  <Navigation className="w-3.5 h-3.5" /> Your Current Location
                 </p>
-                <p className="text-[11px] text-slate-500 mt-0.5">Live GPS coordinate lock</p>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Drag this pin or click anywhere on the map to change!
+                </p>
               </div>
             </Popup>
           </Marker>

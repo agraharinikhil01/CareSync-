@@ -1,31 +1,56 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import toast from 'react-hot-toast';
 
+const STORAGE_KEY = 'caresync_user_location_v1';
+
 /**
- * useGeolocation — 3-step location resolution hook
- *
- * Step 1: Browser GPS  (navigator.geolocation) — most accurate
- * Step 2: IP Location  (ipapi.co — free, no API key, 30k req/mo)
- * Step 3: Delhi default — always works as last resort
+ * useGeolocation — Comprehensive Location Management
+ * 
+ * 1. Saved location in localStorage (e.g. Khalilabad, Sant Kabir Nagar)
+ * 2. Browser GPS (navigator.geolocation)
+ * 3. Free IP-based geolocation (ipapi.co)
+ * 4. Manual location selection / Map click / City search (Nominatim)
+ * 5. Default fallback (New Delhi)
  */
 const useGeolocation = () => {
-  const [location, setLocation] = useState(null); // null = not yet resolved
+  const [location, setLocation] = useState(null); // { lat, lng }
   const [locationName, setLocationName] = useState('Detecting location...');
-  const [locationSource, setLocationSource] = useState(''); // 'gps' | 'ip' | 'default'
+  const [locationSource, setLocationSource] = useState(''); // 'saved' | 'gps' | 'ip' | 'manual' | 'default'
   const [locating, setLocating] = useState(false);
 
-  // ── Step 3: Hard default (New Delhi center) ──────────────────────────────
+  // Set location manually (via search or map click) and persist
+  const setManualLocation = useCallback((lat, lng, name) => {
+    const newLoc = { lat: parseFloat(lat), lng: parseFloat(lng) };
+    const label = name || `📍 Location (${newLoc.lat.toFixed(3)}, ${newLoc.lng.toFixed(3)})`;
+    setLocation(newLoc);
+    setLocationName(label);
+    setLocationSource('manual');
+    setLocating(false);
+
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ lat: newLoc.lat, lng: newLoc.lng, name: label, source: 'manual' })
+      );
+    } catch {
+      // ignore storage error
+    }
+
+    toast.success(`📍 Location set to: ${label}`);
+  }, []);
+
+  // Hard default (New Delhi)
   const useDelhi = useCallback((silent = false) => {
     setLocation({ lat: 28.6139, lng: 77.209 });
     setLocationName('🏙️ New Delhi (Default)');
     setLocationSource('default');
     setLocating(false);
     if (!silent) {
-      toast('📍 Location unavailable — showing New Delhi hospitals.', { icon: 'ℹ️' });
+      toast('📍 Using default location — search or click map to change.', { icon: 'ℹ️' });
     }
   }, []);
 
-  // ── Step 2: IP-based via ipapi.co (free, no key) ─────────────────────────
+  // IP-based via ipapi.co (free, no key)
   const fetchIpLocation = useCallback(async () => {
     try {
       const controller = new AbortController();
@@ -39,43 +64,55 @@ const useGeolocation = () => {
       if (!response.ok) throw new Error(`ipapi HTTP ${response.status}`);
 
       const data = await response.json();
-
       if (data.error) throw new Error(`ipapi error: ${data.reason || data.error}`);
 
       if (data.latitude && data.longitude) {
         const lat = parseFloat(data.latitude);
         const lng = parseFloat(data.longitude);
+        if (isNaN(lat) || isNaN(lng)) throw new Error('Invalid coords');
 
-        if (isNaN(lat) || isNaN(lng)) throw new Error('ipapi returned invalid coords');
-
+        const city = data.city || data.region || 'Your Area';
+        const label = `📡 ${city} (IP)`;
         setLocation({ lat, lng });
-        const city = data.city || data.region || data.country_name || 'Your Area';
-        setLocationName(`📡 ${city}`);
+        setLocationName(label);
         setLocationSource('ip');
         setLocating(false);
-        toast.success(`📡 Location detected: ${city}`);
+        toast.success(`📡 Approximate location: ${city}. You can adjust anytime!`);
         return true;
       }
-
-      throw new Error('ipapi response missing lat/lng');
+      throw new Error('Missing lat/lng');
     } catch (err) {
-      if (err.name === 'AbortError') {
-        console.warn('ipapi.co request timed out — using Delhi fallback');
-      } else {
-        console.warn('IP geolocation failed:', err.message, '— using Delhi fallback');
-      }
+      console.warn('IP geolocation failed:', err.message, '— using Delhi fallback');
       useDelhi();
       return false;
     }
   }, [useDelhi]);
 
-  // ── Step 1: Browser GPS ──────────────────────────────────────────────────
-  const detectLocation = useCallback(() => {
+  // Browser GPS (with fallback to IP)
+  const detectLocation = useCallback((forceGps = false) => {
     setLocating(true);
-    setLocationName('Detecting location...');
+    setLocationName('Detecting GPS location...');
+
+    // If user already saved a manual location and not forcing GPS, use saved
+    if (!forceGps) {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed.lat && parsed.lng) {
+            setLocation({ lat: parsed.lat, lng: parsed.lng });
+            setLocationName(parsed.name || '📍 Saved Location');
+            setLocationSource(parsed.source || 'saved');
+            setLocating(false);
+            return;
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
 
     if (!('geolocation' in navigator)) {
-      // Browser doesn't support Geolocation API at all
       fetchIpLocation();
       return;
     }
@@ -84,38 +121,74 @@ const useGeolocation = () => {
       (pos) => {
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
-
-        // Sanity check: must be valid India-ish coordinates
         if (isNaN(lat) || isNaN(lng)) {
           fetchIpLocation();
           return;
         }
 
         setLocation({ lat, lng });
-        setLocationName('📍 Your Live GPS Location');
+        setLocationName('📍 Live GPS Location');
         setLocationSource('gps');
         setLocating(false);
+
+        try {
+          localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify({ lat, lng, name: '📍 Live GPS Location', source: 'gps' })
+          );
+        } catch {
+          // ignore
+        }
+
         toast.success('📍 Live GPS location acquired!');
       },
       async (err) => {
-        // err.code: 1=PERMISSION_DENIED, 2=POSITION_UNAVAILABLE, 3=TIMEOUT
-        console.warn(`GPS failed (code ${err.code}): ${err.message} — trying ipapi.co...`);
+        console.warn(`GPS failed (${err.code}): ${err.message} — trying IP fallback...`);
         await fetchIpLocation();
       },
       {
         enableHighAccuracy: true,
         timeout: 8000,
-        maximumAge: 60000, // accept cached position up to 1 min old
+        maximumAge: 30000,
       }
     );
   }, [fetchIpLocation]);
 
+  // Search places using OpenStreetMap Nominatim (Free, no API key)
+  const searchPlaces = async (query) => {
+    if (!query || query.trim().length < 2) return [];
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+        query.trim()
+      )}&countrycodes=in&limit=6&addressdetails=1`;
+      const res = await fetch(url, {
+        headers: {
+          'Accept-Language': 'en,hi',
+        },
+      });
+      if (!res.ok) return [];
+      const items = await res.json();
+      return items.map((item) => ({
+        name: item.display_name,
+        city: item.address?.city || item.address?.town || item.address?.village || item.address?.county || item.name,
+        state: item.address?.state || '',
+        lat: parseFloat(item.lat),
+        lng: parseFloat(item.lon),
+      }));
+    } catch (err) {
+      console.error('Nominatim search error:', err);
+      return [];
+    }
+  };
+
   return {
-    location,       // { lat, lng } | null
-    locationName,   // human-readable label
-    locationSource, // 'gps' | 'ip' | 'default'
-    locating,       // boolean — detecting in progress
-    detectLocation, // call to trigger/re-trigger detection
+    location,
+    locationName,
+    locationSource,
+    locating,
+    detectLocation,
+    setManualLocation,
+    searchPlaces,
   };
 };
 

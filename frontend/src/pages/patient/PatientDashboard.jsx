@@ -8,6 +8,7 @@ import DashboardLayout from '../../layouts/DashboardLayout';
 import HospitalMap from '../../components/map/HospitalMap';
 import HospitalCard from '../../components/hospital/HospitalCard';
 import EmergencyModal from '../../components/emergency/EmergencyModal';
+import LocationModal from '../../components/location/LocationModal';
 import {
   Compass,
   MapPin,
@@ -55,13 +56,22 @@ const PatientDashboard = () => {
   const [minIcu, setMinIcu] = useState('');
   const [sortBy, setSortBy] = useState('distance');
 
-  // ── Geolocation via shared hook (GPS → ipapi.co → Delhi default) ──
-  const { location: userLocation, locationName, locationSource, locating, detectLocation } = useGeolocation();
+  // ── Geolocation via shared hook (GPS → ipapi.co → Manual Search → Delhi default) ──
+  const {
+    location: userLocation,
+    locationName,
+    locationSource,
+    locating,
+    detectLocation,
+    setManualLocation,
+    searchPlaces,
+  } = useGeolocation();
 
   // View state
   const [mobileTab, setMobileTab] = useState('list');
   const [showFilters, setShowFilters] = useState(false);
   const [showEmergencyModal, setShowEmergencyModal] = useState(false);
+  const [showLocationModal, setShowLocationModal] = useState(false);
   const [lastLiveUpdate, setLastLiveUpdate] = useState(null);
 
   // Trigger location detection once on mount
@@ -181,13 +191,13 @@ const PatientDashboard = () => {
             <div className="flex items-center gap-2.5 flex-wrap">
               <button
                 type="button"
-                onClick={detectLocation}
-                disabled={locating}
-                className="px-3.5 py-2 rounded-2xl bg-slate-100 hover:bg-slate-200/70 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-                title="Use current GPS location"
+                onClick={() => setShowLocationModal(true)}
+                className="px-3.5 py-2 rounded-2xl bg-sky-50 hover:bg-sky-100 border border-sky-200 text-sky-900 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm group"
+                title="Click to search city/town or change location"
               >
-                <MapPin className={`w-3.5 h-3.5 text-sky-600 ${locating ? 'animate-bounce' : ''}`} />
-                <span className="truncate max-w-[150px]">{locating ? 'Locating...' : locationName}</span>
+                <MapPin className={`w-3.5 h-3.5 text-sky-600 group-hover:scale-110 transition-transform ${locating ? 'animate-bounce' : ''}`} />
+                <span className="truncate max-w-[150px] sm:max-w-[200px]">{locating ? 'Locating...' : locationName}</span>
+                <span className="text-[10px] uppercase font-extrabold px-1.5 py-0.5 rounded-md bg-sky-200 text-sky-800 ml-1">Change</span>
               </button>
 
               <button
@@ -306,7 +316,8 @@ const PatientDashboard = () => {
               userLocation={userLocation}
               selectedHospital={selectedHospital}
               onSelectHospital={(h) => setSelectedHospital(h)}
-              onLocateMe={detectLocation}
+              onLocateMe={() => detectLocation(true)}
+              onMapClick={(lat, lng) => setManualLocation(lat, lng, '📍 Selected Location')}
               height="100%"
             />
           </div>
@@ -375,6 +386,16 @@ const PatientDashboard = () => {
         onClose={() => setShowEmergencyModal(false)}
         userLocation={userLocation}
         nearestHospitals={hospitals}
+      />
+
+      {/* Location Selector Modal */}
+      <LocationModal
+        isOpen={showLocationModal}
+        onClose={() => setShowLocationModal(false)}
+        onSelectLocation={setManualLocation}
+        onUseGps={() => detectLocation(true)}
+        searchPlaces={searchPlaces}
+        currentLocationName={locationName}
       />
     </DashboardLayout>
   );

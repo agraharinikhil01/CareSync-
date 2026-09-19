@@ -81,7 +81,7 @@ exports.getNearbyHospitals = async (req, res) => {
       // Compute exact distance and driving time for each hospital
       hospitals = hospitals.map((h) => {
         const [hLng, hLat] = h.location.coordinates;
-        // Haversine formula
+        // Haversine formula (straight-line distance)
         const R = 6371; // km
         const dLat = ((hLat - userLat) * Math.PI) / 180;
         const dLng = ((hLng - userLng) * Math.PI) / 180;
@@ -92,15 +92,31 @@ exports.getNearbyHospitals = async (req, res) => {
             Math.sin(dLng / 2) *
             Math.sin(dLng / 2);
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        const rawDistance = R * c;
-        const distanceKm = Math.round(rawDistance * 10) / 10;
-        const estTravelMinutes = distanceKm < 0.2 ? 1 : Math.max(1, Math.round(distanceKm * 2.2));
+        const straightLineKm = R * c;
+
+        // Apply road distance correction factor (Indian roads avg 1.3x straight line)
+        // For very short distances (<0.2km) use 1.1x, for others use 1.3x
+        const correctionFactor = straightLineKm < 0.2 ? 1.1 : 1.3;
+        const roadDistanceKm = straightLineKm * correctionFactor;
+
+        // Round to 1 decimal place (e.g., 0.9 km, 1.2 km)
+        const distanceKm = Math.round(roadDistanceKm * 10) / 10;
+
+        // Realistic travel time: local Indian town speed ~20-25 km/h
+        // < 200m = 1 min, else calculate based on 20 km/h average
+        const estTravelMinutes =
+          distanceKm < 0.2 ? 1 :
+          distanceKm < 1.0 ? Math.max(2, Math.round(distanceKm * 3)) :
+          Math.max(3, Math.round(distanceKm * 2.5));
 
         const freshness = calculateFreshness(h.lastStatusUpdate);
 
         // Transparent match reasons
         const matchReasons = [];
-        const distLabel = distanceKm < 0.1 ? 'Nearby (~100m)' : `${distanceKm} km away`;
+        const distLabel =
+          distanceKm < 0.1 ? 'Nearby (< 100 m)' :
+          distanceKm < 1.0 ? `${distanceKm} km away (road est.)` :
+          `${distanceKm} km away (road est.)`;
         matchReasons.push(`${distLabel} (~${estTravelMinutes} min)`);
         if (h.capacitySummary?.icu?.available > 0) {
           matchReasons.push(`${h.capacitySummary.icu.available} ICU beds available`);
@@ -120,6 +136,7 @@ exports.getNearbyHospitals = async (req, res) => {
           matchReasons,
         };
       }).sort((a, b) => (a.distanceKm ?? 999) - (b.distanceKm ?? 999)).slice(0, 50);
+
     } else {
       // Fallback if no location coordinates provided
       hospitals = await Hospital.find(query).sort({ rating: -1 }).limit(50).lean();

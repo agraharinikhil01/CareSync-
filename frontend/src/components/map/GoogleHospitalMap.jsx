@@ -91,6 +91,8 @@ const GoogleHospitalMap = ({
   // Initialize Google Maps instance
   useEffect(() => {
     let isMounted = true;
+    let fallbackTimer = null;
+    let tilesLoaded = false;
 
     if (!isGoogleMapsConfigured()) {
       setErrorState('KEY_MISSING');
@@ -106,26 +108,72 @@ const GoogleHospitalMap = ({
           ? { lat: userLocation.lat, lng: userLocation.lng }
           : center;
 
-        const map = new google.maps.Map(mapContainerRef.current, {
-          center: initialCenter,
-          zoom: zoom,
-          mapTypeId: google.maps.MapTypeId.HYBRID,
-          disableDefaultUI: false,
-          zoomControl: true,
-          mapTypeControl: false,
-          scaleControl: true,
-          streetViewControl: false,
-          rotateControl: true,
-          fullscreenControl: true,
-          gestureHandling: 'greedy',
-          styles: [
-            {
-              featureType: 'poi.medical',
-              elementType: 'geometry',
-              stylers: [{ color: '#f87171' }],
-            },
-          ],
+        let map;
+        try {
+          map = new google.maps.Map(mapContainerRef.current, {
+            center: initialCenter,
+            zoom: zoom,
+            mapTypeId: google.maps.MapTypeId.HYBRID,
+            disableDefaultUI: false,
+            zoomControl: true,
+            mapTypeControl: false,
+            scaleControl: true,
+            streetViewControl: false,
+            rotateControl: true,
+            fullscreenControl: true,
+            gestureHandling: 'greedy',
+            styles: [
+              {
+                featureType: 'poi.medical',
+                elementType: 'geometry',
+                stylers: [{ color: '#f87171' }],
+              },
+            ],
+          });
+        } catch (mapErr) {
+          console.warn('Google Maps Map() init failed:', mapErr.message);
+          if (isMounted) {
+            setErrorState('LOAD_FAILED');
+            setLoading(false);
+          }
+          return;
+        }
+
+        // Detect if tiles actually load (proves map is working)
+        map.addListener('tilesloaded', () => {
+          tilesLoaded = true;
+          if (fallbackTimer) {
+            clearTimeout(fallbackTimer);
+            fallbackTimer = null;
+          }
         });
+
+        // Timeout fallback: if tiles don't load in 6s, Google Maps is blocked (API key restriction)
+        fallbackTimer = setTimeout(() => {
+          if (!tilesLoaded && isMounted) {
+            console.warn('Google Maps tiles did not load in 6s — switching to satellite fallback map');
+            setErrorState('LOAD_FAILED');
+            setLoading(false);
+          }
+        }, 6000);
+
+        // Also detect Google Maps error div via MutationObserver
+        const observer = new MutationObserver(() => {
+          const container = mapContainerRef.current;
+          if (!container) return;
+          // Google Maps renders a specific error div when key is invalid/restricted
+          const errorEl = container.querySelector('.gm-err-container, [data-error]');
+          if (errorEl && isMounted && !tilesLoaded) {
+            console.warn('Google Maps error div detected — switching to satellite fallback map');
+            clearTimeout(fallbackTimer);
+            observer.disconnect();
+            setErrorState('LOAD_FAILED');
+            setLoading(false);
+          }
+        });
+        if (mapContainerRef.current) {
+          observer.observe(mapContainerRef.current, { childList: true, subtree: true });
+        }
 
         // Click listener for custom pinpointing
         map.addListener('click', (e) => {
@@ -160,6 +208,7 @@ const GoogleHospitalMap = ({
 
     return () => {
       isMounted = false;
+      if (fallbackTimer) clearTimeout(fallbackTimer);
     };
   }, []);
 

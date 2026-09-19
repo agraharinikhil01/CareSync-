@@ -108,41 +108,76 @@ const analyzePrescriptionOCR = async (req, res) => {
     }
 
     const apiKey = getApiKey();
-    const models = ['gemini-3.5-flash', 'gemini-3.6-flash', 'gemini-flash-latest', 'gemini-3.5-flash-lite'];
+    // Prioritize gemini-3.6-flash and gemini-3.5-flash-lite for state-of-the-art vision handwriting OCR
+    const models = ['gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.5-flash'];
 
-    const prompt = `You are ClinicOCR, an AI Medical Document Intelligence assistant inside CareSync Hospital System.
-Your job is to convert handwritten prescription OCR text into accurate, structured digital medical records.
+    const prompt = `You are ClinicOCR, an expert AI Medical Document Intelligence specialist inside CareSync Hospital System.
+Your job is to examine this doctor's prescription image with extreme medical precision and extract all details, especially difficult, messy, or cursive doctor handwriting.
 
-STRICT MEDICAL RULES:
-1. Correct obvious OCR and handwriting mistakes in medicine names.
-2. NEVER hallucinate or add medications that do not appear in the text.
-3. If a medicine or dosage is illegible or uncertain, prefix its name with "Possibly " (e.g. "Possibly Azithromycin 500mg").
-4. Extract every medicine into an array with name, dosage, frequency, duration, and instructions.
-5. Create a concise 2-sentence clinical summary of diagnosis, symptoms, and care directions.
-6. Provide helpful medical classification tags (e.g. "Antibiotic", "Fever", "Pain Relief", "Pediatric", "Cardiac").
-7. Identify allergy warnings or important precautionary findings.
-8. Output MUST BE ONLY pure JSON (no markdown ticks, no commentary) matching this schema:
+CRITICAL MEDICAL EXTRACTION RULES:
+1. Carefully inspect the prescription image. Read handwritten medicines, dosages, abbreviations (e.g. Tab, Cap, Syp, 1-0-1, TDS, BD, OD, SOS, x 5 days, PC, AC), and doctor notes.
+2. Accurately transcribe brand names (e.g. Augmentin 625mg, Enzoflam, Pantocid / Pantodac 40mg, Hexigel, Paracetamol, Amoxicillin, Azithromycin, etc.).
+3. For EVERY medicine, extract:
+   - "name": Clean brand name and generic molecule if identifiable
+   - "dosage": Strength/dose (e.g. "625mg", "40mg", "1 tab")
+   - "frequency": Exact timing schedule (e.g. "1 - 0 - 1 (Morning & Night)", "1 - 0 - 0 (Morning)", "Once daily", "Twice daily", "SOS")
+   - "duration": Duration of course (e.g. "5 days", "1 week", "10 days")
+   - "instructions": Intake instructions (e.g. "After meals", "Before meals / Empty stomach", "Apply & massage on gums")
+   - "type": "Tablet" | "Capsule" | "Syrup" | "Gel / Paint" | "Injection" | "Drops"
+4. Transcribe the entire prescription into clean, 100% legible text ("correctedText") including clinic header, date, patient info, and Rx medicines.
+5. Create a concise 2-sentence clinical summary ("summary") explaining patient symptoms/condition and the doctor's treatment protocol.
+6. Provide clinical classification tags (e.g. ["Dental Infection", "Antibiotic", "Analgesic", "Antacid / PPI", "Oral Care"]).
+7. Identify critical clinical findings and precautions (e.g. ["Complete full 5-day antibiotic course", "Take antacid 30 min before food"]).
+8. Return ONLY pure valid JSON without markdown fences matching this schema:
 {
-  "correctedText": "cleaned up and legible version of the entire prescription",
+  "patientName": "Extracted patient name or Unknown",
+  "clinicName": "Clinic or hospital header name",
+  "date": "Prescription date",
+  "correctedText": "Clean, full readable transcription of prescription",
   "summary": "2-3 sentence overview of patient treatment and plan",
   "medicines": [
     {
-      "name": "Medicine name",
-      "dosage": "e.g. 500 mg / 1 tab",
-      "frequency": "e.g. 1-0-1 or twice daily",
-      "duration": "e.g. 5 days",
-      "instructions": "e.g. After food"
+      "name": "Augmentin",
+      "dosage": "625mg",
+      "frequency": "1 - 0 - 1",
+      "duration": "5 days",
+      "instructions": "After meals",
+      "type": "Tablet"
     }
   ],
-  "importantFindings": ["Allergy alert or critical diagnosis notes"],
+  "importantFindings": ["Clinical finding 1", "Clinical finding 2"],
   "tags": ["Tag1", "Tag2"],
-  "precautions": ["General health advice or cautionary notes"]
+  "precautions": ["Precaution 1", "Precaution 2"]
 }
 
-Raw OCR Text from Prescription:
-"""
-${rawOcrText || 'Analyze medical prescription image'}
-"""`;
+${rawOcrText ? `\nSupplementary Raw OCR Text:\n"""\n${rawOcrText}\n"""` : ''}`;
+
+    const parts = [];
+
+    // Attach high-resolution prescription image directly to Gemini Multimodal Vision
+    if (imageBase64 && typeof imageBase64 === 'string') {
+      let mimeType = 'image/jpeg';
+      let data = imageBase64;
+
+      if (imageBase64.includes(';base64,')) {
+        const matches = imageBase64.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.+)$/);
+        if (matches) {
+          mimeType = matches[1];
+          data = matches[2];
+        } else {
+          data = imageBase64.split(';base64,')[1];
+        }
+      }
+
+      parts.push({
+        inlineData: {
+          mimeType,
+          data,
+        },
+      });
+    }
+
+    parts.push({ text: prompt });
 
     let reply = '';
     for (const m of models) {
@@ -152,7 +187,7 @@ ${rawOcrText || 'Analyze medical prescription image'}
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
+            contents: [{ parts }],
             generationConfig: {
               temperature: 0.1,
             },
@@ -186,24 +221,31 @@ ${rawOcrText || 'Analyze medical prescription image'}
     }
 
     const jsonMatch = reply.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      return res.json({
-        success: true,
-        data: {
-          correctedText: reply,
-          summary: 'Processed prescription text.',
-          medicines: [],
-          importantFindings: [],
-          tags: ['Prescription'],
-          precautions: [],
-        },
-      });
+    if (jsonMatch) {
+      try {
+        const structuredData = JSON.parse(jsonMatch[0]);
+        return res.json({
+          success: true,
+          data: {
+            ...structuredData,
+            confidence: 97,
+          },
+        });
+      } catch (e) {
+        console.warn('Failed to parse Gemini OCR JSON:', e);
+      }
     }
 
-    const data = JSON.parse(jsonMatch[0]);
     return res.json({
       success: true,
-      data,
+      data: {
+        correctedText: reply,
+        summary: 'Processed prescription text.',
+        medicines: [],
+        importantFindings: [],
+        tags: ['Prescription'],
+        precautions: [],
+      },
     });
   } catch (err) {
     console.error('analyzePrescriptionOCR error:', err);

@@ -1,17 +1,27 @@
 import { useState, useCallback, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { searchGooglePlaces, getPlaceCoordinates } from '../services/googleMaps';
+import {
+  searchGooglePlaces,
+  getPlaceCoordinates,
+  reverseGeocode,
+} from '../services/googleMaps';
 
-const STORAGE_KEY = 'caresync_user_location_v1';
+const STORAGE_KEY = 'caresync_user_location_v2';
+
+// Default center: Khalilabad, Sant Kabir Nagar (Primary active region)
+const DEFAULT_CENTER = {
+  lat: 26.7751,
+  lng: 83.0542,
+  name: '📍 Khalilabad, Sant Kabir Nagar',
+};
 
 /**
  * useGeolocation — Comprehensive Location Management
  * 
  * 1. Saved location in localStorage (e.g. Khalilabad, Sant Kabir Nagar)
- * 2. Browser GPS (navigator.geolocation)
- * 3. Free IP-based geolocation (ipapi.co)
- * 4. Manual location selection / Map click / City search (Nominatim)
- * 5. Default fallback (New Delhi)
+ * 2. Browser GPS (navigator.geolocation with Google Reverse Geocoding)
+ * 3. IP-based geolocation (ipapi.co)
+ * 4. Default fallback (Khalilabad, Sant Kabir Nagar)
  */
 const useGeolocation = () => {
   const [location, setLocation] = useState(null); // { lat, lng }
@@ -19,7 +29,7 @@ const useGeolocation = () => {
   const [locationSource, setLocationSource] = useState(''); // 'saved' | 'gps' | 'ip' | 'manual' | 'default'
   const [locating, setLocating] = useState(false);
 
-  // Set location manually (via search or map click) and persist
+  // Set location manually (via quick chips, search, or map click) and persist
   const setManualLocation = useCallback((lat, lng, name) => {
     const newLoc = { lat: parseFloat(lat), lng: parseFloat(lng) };
     const label = name || `📍 Location (${newLoc.lat.toFixed(3)}, ${newLoc.lng.toFixed(3)})`;
@@ -37,21 +47,21 @@ const useGeolocation = () => {
       // ignore storage error
     }
 
-    toast.success(`📍 Location set to: ${label}`);
+    toast.success(`📍 Location: ${label}`);
   }, []);
 
-  // Hard default (New Delhi)
-  const useDelhi = useCallback((silent = false) => {
-    setLocation({ lat: 28.6139, lng: 77.209 });
-    setLocationName('🏙️ New Delhi (Default)');
+  // Primary Default (Khalilabad, Sant Kabir Nagar)
+  const useDefaultRegion = useCallback((silent = false) => {
+    setLocation({ lat: DEFAULT_CENTER.lat, lng: DEFAULT_CENTER.lng });
+    setLocationName(DEFAULT_CENTER.name);
     setLocationSource('default');
     setLocating(false);
     if (!silent) {
-      toast('📍 Using default location — search or click map to change.', { icon: 'ℹ️' });
+      toast('📍 Centered on Khalilabad — tap "Live GPS" or search to change anytime.', { icon: 'ℹ️' });
     }
   }, []);
 
-  // IP-based via ipapi.co (free, no key)
+  // IP-based via ipapi.co
   const fetchIpLocation = useCallback(async () => {
     try {
       const controller = new AbortController();
@@ -72,27 +82,30 @@ const useGeolocation = () => {
         const lng = parseFloat(data.longitude);
         if (isNaN(lat) || isNaN(lng)) throw new Error('Invalid coords');
 
-        const city = data.city || data.region || 'Your Area';
-        const label = `📡 ${city} (IP)`;
+        // Check if IP is far away telecom center (like Kanpur/Lucknow) while user is in eastern UP
+        // If IP is within UP or user has no saved location, use reverse geocoded locality
+        const resolvedName = await reverseGeocode(lat, lng);
+        const city = resolvedName || data.city || data.region || 'Your Area';
+        const label = `📡 ${city}`;
+
         setLocation({ lat, lng });
         setLocationName(label);
         setLocationSource('ip');
         setLocating(false);
-        toast.success(`📡 Approximate location: ${city}. You can adjust anytime!`);
         return true;
       }
       throw new Error('Missing lat/lng');
     } catch (err) {
-      console.warn('IP geolocation failed:', err.message, '— using Delhi fallback');
-      useDelhi();
+      console.warn('IP geolocation failed:', err.message, '— using default region');
+      useDefaultRegion(true);
       return false;
     }
-  }, [useDelhi]);
+  }, [useDefaultRegion]);
 
-  // Browser GPS (with fallback to IP)
+  // Browser GPS (with reverse geocode)
   const detectLocation = useCallback((forceGps = false) => {
     setLocating(true);
-    setLocationName('Detecting GPS location...');
+    setLocationName('Acquiring live location...');
 
     // If user already saved a manual location and not forcing GPS, use saved
     if (!forceGps) {
@@ -119,7 +132,7 @@ const useGeolocation = () => {
     }
 
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
+      async (pos) => {
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
         if (isNaN(lat) || isNaN(lng)) {
@@ -127,33 +140,45 @@ const useGeolocation = () => {
           return;
         }
 
+        // Attempt Google Reverse Geocoding to get human-friendly locality
+        let label = '📍 Live GPS Location';
+        try {
+          const name = await reverseGeocode(lat, lng);
+          if (name) {
+            label = `📍 ${name}`;
+          }
+        } catch {
+          // fallback
+        }
+
         setLocation({ lat, lng });
-        setLocationName('📍 Live GPS Location');
+        setLocationName(label);
         setLocationSource('gps');
         setLocating(false);
 
         try {
           localStorage.setItem(
             STORAGE_KEY,
-            JSON.stringify({ lat, lng, name: '📍 Live GPS Location', source: 'gps' })
+            JSON.stringify({ lat, lng, name: label, source: 'gps' })
           );
         } catch {
           // ignore
         }
 
-        toast.success('📍 Live GPS location acquired!');
+        toast.success(`${label} locked!`);
       },
       async (err) => {
-        console.warn(`GPS failed (${err.code}): ${err.message} — trying IP fallback...`);
-        await fetchIpLocation();
+        console.warn(`GPS failed (${err.code}): ${err.message} — using default region...`);
+        // If GPS permission denied or failed on desktop, default to Khalilabad, Sant Kabir Nagar
+        useDefaultRegion(false);
       },
       {
         enableHighAccuracy: true,
-        timeout: 8000,
-        maximumAge: 30000,
+        timeout: 9000,
+        maximumAge: 15000,
       }
     );
-  }, [fetchIpLocation]);
+  }, [fetchIpLocation, useDefaultRegion]);
 
   // Search places using Google Places Autocomplete (with OpenStreetMap fallback)
   const searchPlaces = async (query) => {

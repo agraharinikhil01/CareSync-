@@ -223,49 +223,92 @@ const ExploreHospitalsPage = () => {
       {/* Main Content Area */}
       <div className="max-w-[1600px] mx-auto w-full p-4 sm:p-6 space-y-6 flex-1 flex flex-col">
         {/* Search, GPS Location & Filters Bar */}
-        <div className="bg-white rounded-3xl border border-slate-200/90 p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Search hospitals by name, area, specialty (Cardiology, ICU)..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 rounded-2xl border border-slate-200 bg-slate-50/70 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
-            />
+        <div className="bg-white rounded-3xl border border-slate-200/90 p-4 shadow-sm space-y-3">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Search hospitals by name, area, specialty (Cardiology, ICU)..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-4 py-2.5 rounded-2xl border border-slate-200 bg-slate-50/70 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap text-xs">
+              <button
+                type="button"
+                onClick={() => setShowLocationModal(true)}
+                className="px-3.5 py-2.5 rounded-2xl bg-sky-50 hover:bg-sky-100 text-sky-900 border border-sky-200 font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm group"
+                title="Click to search city/town or change location"
+              >
+                <MapPin className={`w-3.5 h-3.5 text-sky-600 group-hover:scale-110 transition-transform ${locating ? 'animate-bounce' : ''}`} />
+                <span className="truncate max-w-[180px] sm:max-w-[240px]">{locating ? 'Locating...' : locationName}</span>
+                <span className="text-[10px] uppercase font-extrabold px-1.5 py-0.5 rounded-md bg-sky-200 text-sky-800 ml-1">Change</span>
+              </button>
+
+              <select
+                value={selectedSpecialty}
+                onChange={(e) => setSelectedSpecialty(e.target.value)}
+                className="px-3.5 py-2.5 rounded-2xl border border-slate-200 bg-white font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500"
+              >
+                {SPECIALTIES.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="px-3.5 py-2.5 rounded-2xl border border-slate-200 bg-white font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500"
+              >
+                <option value="distance">Nearest Distance</option>
+                <option value="availability">Highest Bed Capacity</option>
+                <option value="name">Name (A-Z)</option>
+              </select>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap text-xs">
+          {/* Quick Location Pills for Instant 1-Tap Proximity */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-0.5 text-xs text-slate-600">
+            <span className="text-[11px] font-bold text-slate-400 shrink-0">📍 Quick Area:</span>
             <button
               type="button"
-              onClick={() => setShowLocationModal(true)}
-              className="px-3.5 py-2.5 rounded-2xl bg-sky-50 hover:bg-sky-100 text-sky-900 border border-sky-200 font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm group"
-              title="Click to search city/town or change location"
+              onClick={() => setManualLocation(26.7751, 83.0542, '📍 Khalilabad, Sant Kabir Nagar')}
+              className="px-2.5 py-1 rounded-xl bg-sky-100 hover:bg-sky-200 text-sky-800 font-bold shrink-0 transition-all cursor-pointer shadow-xs border border-sky-200"
             >
-              <MapPin className={`w-3.5 h-3.5 text-sky-600 group-hover:scale-110 transition-transform ${locating ? 'animate-bounce' : ''}`} />
-              <span className="truncate max-w-[180px] sm:max-w-[240px]">{locating ? 'Locating...' : locationName}</span>
-              <span className="text-[10px] uppercase font-extrabold px-1.5 py-0.5 rounded-md bg-sky-200 text-sky-800 ml-1">Change</span>
+              Khalilabad (Main)
             </button>
-
-            <select
-              value={selectedSpecialty}
-              onChange={(e) => setSelectedSpecialty(e.target.value)}
-              className="px-3.5 py-2.5 rounded-2xl border border-slate-200 bg-white font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500"
+            <button
+              type="button"
+              onClick={() => setManualLocation(26.7725, 83.0640, '📍 Katai Bazar, Sant Kabir Nagar')}
+              className="px-2.5 py-1 rounded-xl bg-sky-100 hover:bg-sky-200 text-sky-800 font-bold shrink-0 transition-all cursor-pointer shadow-xs border border-sky-200"
             >
-              {SPECIALTIES.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
-
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="px-3.5 py-2.5 rounded-2xl border border-slate-200 bg-white font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500"
+              Katai Bazar
+            </button>
+            <button
+              type="button"
+              onClick={() => setManualLocation(26.7606, 83.3732, '📍 Gorakhpur')}
+              className="px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium shrink-0 transition-colors cursor-pointer"
             >
-              <option value="distance">Nearest Distance</option>
-              <option value="availability">Highest Bed Capacity</option>
-              <option value="name">Name (A-Z)</option>
-            </select>
+              Gorakhpur
+            </button>
+            <button
+              type="button"
+              onClick={() => setManualLocation(26.7950, 82.7820, '📍 Basti')}
+              className="px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium shrink-0 transition-colors cursor-pointer"
+            >
+              Basti
+            </button>
+            <button
+              type="button"
+              onClick={() => detectLocation(true)}
+              className="px-2.5 py-1 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold shrink-0 transition-all cursor-pointer flex items-center gap-1 shadow-sm"
+            >
+              <Navigation className="w-3 h-3 text-sky-400" />
+              <span>Capture Live GPS</span>
+            </button>
           </div>
         </div>
 

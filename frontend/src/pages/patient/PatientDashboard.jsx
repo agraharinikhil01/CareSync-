@@ -226,6 +226,47 @@ const PatientDashboard = () => {
             </div>
           </div>
 
+          {/* Quick Location Pills for Instant 1-Tap Proximity */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-0.5 text-xs text-slate-600">
+            <span className="text-[11px] font-bold text-slate-400 shrink-0">📍 Quick Area:</span>
+            <button
+              type="button"
+              onClick={() => setManualLocation(26.7751, 83.0542, '📍 Khalilabad, Sant Kabir Nagar')}
+              className="px-2.5 py-1 rounded-xl bg-sky-100 hover:bg-sky-200 text-sky-800 font-bold shrink-0 transition-all cursor-pointer shadow-xs border border-sky-200"
+            >
+              Khalilabad (Main)
+            </button>
+            <button
+              type="button"
+              onClick={() => setManualLocation(26.7725, 83.0640, '📍 Katai Bazar, Sant Kabir Nagar')}
+              className="px-2.5 py-1 rounded-xl bg-sky-100 hover:bg-sky-200 text-sky-800 font-bold shrink-0 transition-all cursor-pointer shadow-xs border border-sky-200"
+            >
+              Katai Bazar
+            </button>
+            <button
+              type="button"
+              onClick={() => setManualLocation(26.7606, 83.3732, '📍 Gorakhpur')}
+              className="px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium shrink-0 transition-colors cursor-pointer"
+            >
+              Gorakhpur
+            </button>
+            <button
+              type="button"
+              onClick={() => setManualLocation(26.7950, 82.7820, '📍 Basti')}
+              className="px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium shrink-0 transition-colors cursor-pointer"
+            >
+              Basti
+            </button>
+            <button
+              type="button"
+              onClick={() => detectLocation(true)}
+              className="px-2.5 py-1 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold shrink-0 transition-all cursor-pointer flex items-center gap-1 shadow-sm"
+            >
+              <Navigation className="w-3 h-3 text-sky-400" />
+              <span>Capture Live GPS</span>
+            </button>
+          </div>
+
           {/* Expandable Filter Bar */}
           {showFilters && (
             <div className="pt-3 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs animate-fadeIn">

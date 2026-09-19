@@ -1,6 +1,8 @@
 import { Loader } from '@googlemaps/js-api-loader';
 
-const GOOGLE_MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
+// Robust fallback: Uses VITE_GOOGLE_MAPS_API_KEY from env, or bundled fallback key for production Vercel
+const GOOGLE_MAPS_KEY =
+  import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyAOVYRIgupAurZup5y1PRh8Ismb1A3lLao';
 
 let loaderInstance = null;
 let googlePromise = null;
@@ -11,6 +13,11 @@ let googlePromise = null;
 export const isGoogleMapsConfigured = () => {
   return Boolean(GOOGLE_MAPS_KEY && GOOGLE_MAPS_KEY.trim().length > 5);
 };
+
+/**
+ * Returns active Google Maps API Key
+ */
+export const getGoogleMapsApiKey = () => GOOGLE_MAPS_KEY;
 
 /**
  * Singleton Google Maps Platform loader
@@ -106,6 +113,40 @@ export const getPlaceCoordinates = async (placeId) => {
       }
     });
   });
+};
+
+/**
+ * Reverse geocode lat/lng to readable location name
+ */
+export const reverseGeocode = async (lat, lng) => {
+  try {
+    await loadGoogleMaps();
+    const geocoder = new window.google.maps.Geocoder();
+
+    return new Promise((resolve) => {
+      geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+        if (status === 'OK' && results?.[0]) {
+          const comp = results[0].address_components || [];
+          const locality = comp.find(
+            (c) => c.types.includes('locality') || c.types.includes('sublocality_level_1')
+          )?.long_name;
+          const district = comp.find((c) =>
+            c.types.includes('administrative_area_level_2')
+          )?.long_name;
+
+          const label = locality
+            ? `${locality}${district && district !== locality ? ', ' + district : ''}`
+            : results[0].formatted_address.split(',').slice(0, 2).join(',');
+
+          resolve(label);
+        } else {
+          resolve(null);
+        }
+      });
+    });
+  } catch {
+    return null;
+  }
 };
 
 /**

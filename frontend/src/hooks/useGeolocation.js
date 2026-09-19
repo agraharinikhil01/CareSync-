@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import { searchGooglePlaces, getPlaceCoordinates } from '../services/googleMaps';
 
 const STORAGE_KEY = 'caresync_user_location_v1';
 
@@ -154,9 +155,27 @@ const useGeolocation = () => {
     );
   }, [fetchIpLocation]);
 
-  // Search places using OpenStreetMap Nominatim (Free, no API key)
+  // Search places using Google Places Autocomplete (with OpenStreetMap fallback)
   const searchPlaces = async (query) => {
     if (!query || query.trim().length < 2) return [];
+
+    // 1. Try Google Places Autocomplete first
+    try {
+      const googleResults = await searchGooglePlaces(query);
+      if (googleResults && googleResults.length > 0) {
+        return googleResults.map((p) => ({
+          placeId: p.placeId,
+          name: p.description,
+          city: p.mainText,
+          state: p.secondaryText,
+          isGoogle: true,
+        }));
+      }
+    } catch (gErr) {
+      console.warn('Google places search skipped, falling back to OSM:', gErr.message);
+    }
+
+    // 2. Fallback to OpenStreetMap Nominatim
     try {
       const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
         query.trim()
@@ -174,10 +193,29 @@ const useGeolocation = () => {
         state: item.address?.state || '',
         lat: parseFloat(item.lat),
         lng: parseFloat(item.lon),
+        isGoogle: false,
       }));
     } catch (err) {
       console.error('Nominatim search error:', err);
       return [];
+    }
+  };
+
+  // Resolve place selection (geocodes Google Places or uses existing lat/lng)
+  const resolveAndSetPlace = async (item) => {
+    if (item.lat && item.lng) {
+      setManualLocation(item.lat, item.lng, item.city ? `📍 ${item.city}` : item.name);
+      return;
+    }
+
+    if (item.placeId) {
+      try {
+        const coords = await getPlaceCoordinates(item.placeId);
+        setManualLocation(coords.lat, coords.lng, `📍 ${item.city || coords.formattedAddress}`);
+      } catch (err) {
+        console.error('Failed to geocode Google Place:', err);
+        toast.error('Could not get coordinates for selected place');
+      }
     }
   };
 
@@ -189,6 +227,7 @@ const useGeolocation = () => {
     detectLocation,
     setManualLocation,
     searchPlaces,
+    resolveAndSetPlace,
   };
 };
 

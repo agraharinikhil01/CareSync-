@@ -15,7 +15,15 @@ const QUICK_PRESETS = [
   { name: 'Bengaluru', lat: 12.9716, lng: 77.5946 },
 ];
 
-const LocationModal = ({ isOpen, onClose, onSelectLocation, onUseGps, searchPlaces, currentLocationName }) => {
+const LocationModal = ({
+  isOpen,
+  onClose,
+  onSelectLocation,
+  onResolvePlace,
+  onUseGps,
+  searchPlaces,
+  currentLocationName,
+}) => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
@@ -108,8 +116,12 @@ const LocationModal = ({ isOpen, onClose, onSelectLocation, onUseGps, searchPlac
                 <button
                   key={idx}
                   type="button"
-                  onClick={() => {
-                    onSelectLocation(item.lat, item.lng, item.city ? `📍 ${item.city}, ${item.state}` : item.name);
+                  onClick={async () => {
+                    if (onResolvePlace) {
+                      await onResolvePlace(item);
+                    } else if (item.lat && item.lng) {
+                      onSelectLocation(item.lat, item.lng, item.city ? `📍 ${item.city}, ${item.state}` : item.name);
+                    }
                     onClose();
                   }}
                   className="w-full text-left p-2.5 rounded-xl hover:bg-sky-50 text-xs border border-transparent hover:border-sky-200 transition-colors flex items-start gap-2.5 cursor-pointer group"

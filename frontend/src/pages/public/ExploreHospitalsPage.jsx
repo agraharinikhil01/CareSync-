@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import useGeolocation from '../../hooks/useGeolocation';
 import socket from '../../services/socket';
-import HospitalMap from '../../components/map/HospitalMap';
+import GoogleHospitalMap from '../../components/map/GoogleHospitalMap';
 import HospitalCard from '../../components/hospital/HospitalCard';
 import EmergencyModal from '../../components/emergency/EmergencyModal';
 import LocationModal from '../../components/location/LocationModal';
@@ -44,7 +44,7 @@ const ExploreHospitalsPage = () => {
   const [emergencyOnly, setEmergencyOnly] = useState(false);
   const [sortBy, setSortBy] = useState('distance');
 
-  // ── Geolocation via shared hook (GPS → ipapi.co → Manual Search → Delhi default) ──
+  // ── Geolocation via shared hook (GPS → ipapi.co → Google Places / Manual Search → Delhi default) ──
   const {
     location: userLocation,
     locationName,
@@ -53,6 +53,7 @@ const ExploreHospitalsPage = () => {
     detectLocation,
     setManualLocation,
     searchPlaces,
+    resolveAndSetPlace,
   } = useGeolocation();
 
   const [mobileTab, setMobileTab] = useState('list');
@@ -268,22 +269,22 @@ const ExploreHospitalsPage = () => {
           </div>
         </div>
 
-        {/* 1. TOP: FULL-WIDTH SATELLITE MAP (MapTiler Powered) */}
+        {/* 1. TOP: FULL-WIDTH SATELLITE MAP (Google Maps Platform Powered) */}
         <div ref={mapSectionRef} className="space-y-2">
           <div className="flex items-center justify-between px-1">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
               <h2 className="text-xs font-bold text-slate-600 uppercase tracking-wider">
-                🛰️ Live Satellite Radar Map (MapTiler Earth View)
+                🛰️ Live Satellite Radar Map (Google Maps Platform)
               </h2>
             </div>
             <span className="text-xs text-slate-500 font-medium hidden sm:inline">
-              Click anywhere on map to set your location pin
+              Click anywhere on map or drag pin to set location
             </span>
           </div>
 
           <div className="w-full h-[460px] sm:h-[520px] rounded-3xl overflow-hidden shadow-xl border border-slate-800/30">
-            <HospitalMap
+            <GoogleHospitalMap
               hospitals={filteredHospitals}
               userLocation={userLocation}
               selectedHospital={selectedHospital}
@@ -414,6 +415,7 @@ const ExploreHospitalsPage = () => {
         isOpen={showLocationModal}
         onClose={() => setShowLocationModal(false)}
         onSelectLocation={setManualLocation}
+        onResolvePlace={resolveAndSetPlace}
         onUseGps={() => detectLocation(true)}
         searchPlaces={searchPlaces}
         currentLocationName={locationName}

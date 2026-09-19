@@ -5,7 +5,7 @@ import api from '../../services/api';
 import useGeolocation from '../../hooks/useGeolocation';
 import socket from '../../services/socket';
 import DashboardLayout from '../../layouts/DashboardLayout';
-import HospitalMap from '../../components/map/HospitalMap';
+import GoogleHospitalMap from '../../components/map/GoogleHospitalMap';
 import HospitalCard from '../../components/hospital/HospitalCard';
 import EmergencyModal from '../../components/emergency/EmergencyModal';
 import LocationModal from '../../components/location/LocationModal';
@@ -56,7 +56,7 @@ const PatientDashboard = () => {
   const [minIcu, setMinIcu] = useState('');
   const [sortBy, setSortBy] = useState('distance');
 
-  // ── Geolocation via shared hook (GPS → ipapi.co → Manual Search → Delhi default) ──
+  // ── Geolocation via shared hook (GPS → ipapi.co → Google Places / Manual Search → Delhi default) ──
   const {
     location: userLocation,
     locationName,
@@ -65,6 +65,7 @@ const PatientDashboard = () => {
     detectLocation,
     setManualLocation,
     searchPlaces,
+    resolveAndSetPlace,
   } = useGeolocation();
 
   // View state
@@ -302,7 +303,7 @@ const PatientDashboard = () => {
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
               <h2 className="text-xs font-bold text-slate-600 uppercase tracking-wider">
-                🛰️ Live Satellite Radar Map (MapTiler High-Resolution Satellite)
+                🛰️ Live Satellite Radar Map (Google Maps Platform)
               </h2>
             </div>
             <span className="text-xs text-slate-500 font-medium hidden sm:inline">
@@ -311,7 +312,7 @@ const PatientDashboard = () => {
           </div>
 
           <div className="w-full h-[460px] sm:h-[520px] rounded-3xl overflow-hidden shadow-xl border border-slate-800/30">
-            <HospitalMap
+            <GoogleHospitalMap
               hospitals={displayedHospitals}
               userLocation={userLocation}
               selectedHospital={selectedHospital}
@@ -393,6 +394,7 @@ const PatientDashboard = () => {
         isOpen={showLocationModal}
         onClose={() => setShowLocationModal(false)}
         onSelectLocation={setManualLocation}
+        onResolvePlace={resolveAndSetPlace}
         onUseGps={() => detectLocation(true)}
         searchPlaces={searchPlaces}
         currentLocationName={locationName}

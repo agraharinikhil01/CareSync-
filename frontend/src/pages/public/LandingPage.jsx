@@ -121,18 +121,11 @@ const LandingPage = () => {
                 <button
                   type="button"
                   onClick={handleFindHospitals}
-                  className="w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-sm shadow-xl shadow-sky-600/30 flex items-center justify-center gap-2 transition-all cursor-pointer transform hover:-translate-y-0.5"
+                  className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-sm shadow-xl shadow-sky-600/30 flex items-center justify-center gap-2 transition-all cursor-pointer transform hover:-translate-y-0.5"
                 >
                   <MapPin className="w-4 h-4" />
                   <span>Find Hospitals Near Me</span>
                 </button>
-                <Link
-                  to="/register-hospital"
-                  className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 font-bold text-sm shadow-sm flex items-center justify-center gap-2 transition-colors"
-                >
-                  <Building2 className="w-4 h-4 text-sky-600" />
-                  <span>Register Hospital</span>
-                </Link>
               </div>
 
               {/* Live Trust Metrics */}

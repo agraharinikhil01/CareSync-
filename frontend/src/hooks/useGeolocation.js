@@ -105,18 +105,19 @@ const useGeolocation = () => {
   // Browser GPS (with reverse geocode)
   const detectLocation = useCallback((forceGps = false) => {
     setLocating(true);
-    setLocationName('Acquiring live location...');
+    setLocationName('Acquiring live GPS location...');
 
-    // If user already saved a manual location and not forcing GPS, use saved
+    // Only bypass GPS if user explicitly manually picked a location earlier AND forceGps is false
     if (!forceGps) {
       try {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
           const parsed = JSON.parse(saved);
-          if (parsed.lat && parsed.lng) {
+          // If the user manually searched/selected a place, honor it unless forced GPS
+          if (parsed.source === 'manual' && parsed.lat && parsed.lng) {
             setLocation({ lat: parsed.lat, lng: parsed.lng });
-            setLocationName(parsed.name || '📍 Saved Location');
-            setLocationSource(parsed.source || 'saved');
+            setLocationName(parsed.name || '📍 Selected Location');
+            setLocationSource('manual');
             setLocating(false);
             return;
           }
@@ -140,7 +141,7 @@ const useGeolocation = () => {
           return;
         }
 
-        // Attempt Google Reverse Geocoding to get human-friendly locality
+        // Reverse Geocoding to get human-friendly locality / town / city
         let label = '📍 Live GPS Location';
         try {
           const name = await reverseGeocode(lat, lng);
@@ -159,26 +160,50 @@ const useGeolocation = () => {
         try {
           localStorage.setItem(
             STORAGE_KEY,
-            JSON.stringify({ lat, lng, name: label, source: 'gps' })
+            JSON.stringify({ lat, lng, name: label, source: 'gps', timestamp: Date.now() })
           );
         } catch {
           // ignore
         }
 
-        toast.success(`${label} locked!`);
+        toast.success(`Live Location: ${label}`);
       },
       async (err) => {
-        console.warn(`GPS failed (${err.code}): ${err.message} — using default region...`);
-        // If GPS permission denied or failed on desktop, default to Khalilabad, Sant Kabir Nagar
-        useDefaultRegion(false);
+        console.warn(`GPS failed (${err.code}): ${err.message} — checking saved or IP fallback...`);
+        // If GPS permission denied or failed on desktop, check if saved exists
+        try {
+          const saved = localStorage.getItem(STORAGE_KEY);
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (parsed.lat && parsed.lng) {
+              setLocation({ lat: parsed.lat, lng: parsed.lng });
+              setLocationName(parsed.name || '📍 Saved Location');
+              setLocationSource(parsed.source || 'saved');
+              setLocating(false);
+              return;
+            }
+          }
+        } catch {
+          // ignore
+        }
+
+        // Try IP location
+        const ipOk = await fetchIpLocation();
+        if (!ipOk) {
+          useDefaultRegion(false);
+        }
       },
       {
         enableHighAccuracy: true,
         timeout: 9000,
-        maximumAge: 15000,
+        maximumAge: 5000,
       }
     );
   }, [fetchIpLocation, useDefaultRegion]);
+
+  const refreshLiveGps = useCallback(() => {
+    detectLocation(true);
+  }, [detectLocation]);
 
   // Search places using Google Places Autocomplete (with OpenStreetMap fallback)
   const searchPlaces = async (query) => {
@@ -250,6 +275,7 @@ const useGeolocation = () => {
     locationSource,
     locating,
     detectLocation,
+    refreshLiveGps,
     setManualLocation,
     searchPlaces,
     resolveAndSetPlace,

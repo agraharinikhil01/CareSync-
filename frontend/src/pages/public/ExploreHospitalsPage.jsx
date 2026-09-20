@@ -20,6 +20,10 @@ import {
   Map as MapIcon,
   ArrowLeft,
   Navigation,
+  PhoneCall,
+  Award,
+  ArrowRight,
+  ExternalLink,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -54,6 +58,7 @@ const ExploreHospitalsPage = () => {
     locationSource,
     locating,
     detectLocation,
+    refreshLiveGps,
     setManualLocation,
     searchPlaces,
     resolveAndSetPlace,
@@ -252,6 +257,7 @@ const ExploreHospitalsPage = () => {
   ).length;
   const emergencyCount = hospitals.filter((h) => h.emergencyAvailable).length;
   const icuCount = hospitals.filter((h) => (h.capacitySummary?.icu?.available || 0) > 0).length;
+  const nearestHospital = filteredHospitals.length > 0 ? filteredHospitals[0] : null;
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans">
@@ -436,6 +442,41 @@ const ExploreHospitalsPage = () => {
             </div>
           </div>
 
+          {/* 📍 Current Live Location Banner */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-2xl bg-gradient-to-r from-sky-50 via-teal-50 to-white border border-sky-200 shadow-2xs">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-xl bg-sky-600 text-white flex items-center justify-center shadow-xs shrink-0">
+                <MapPin className={`w-4 h-4 ${locating ? 'animate-bounce' : ''}`} />
+              </div>
+              <div className="min-w-0 text-left">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  Aapki Present Live Location
+                </p>
+                <p className="text-xs font-black text-slate-900 truncate">
+                  {locating ? 'Detecting current live GPS coordinates...' : locationName}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => detectLocation(true)}
+                className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
+              >
+                <Navigation className="w-3 h-3 text-sky-400" />
+                <span>Update Live GPS</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowLocationModal(true)}
+                className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+              >
+                Change Area
+              </button>
+            </div>
+          </div>
+
           {/* Quick Location Pills for Instant 1-Tap Proximity */}
           <div className="flex items-center gap-2 overflow-x-auto pb-0.5 text-xs text-slate-600">
             <span className="text-[11px] font-bold text-slate-400 shrink-0">📍 Quick Area:</span>
@@ -572,6 +613,116 @@ const ExploreHospitalsPage = () => {
               </button>
             </div>
           </div>
+
+          {/* 🏆 Sabse Nearest Hospital Spotlight Card */}
+          {!loading && nearestHospital && (
+            <div className="rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-sky-950 text-white p-5 sm:p-6 shadow-xl border border-sky-600/30 relative overflow-hidden space-y-4">
+              <div className="absolute -right-10 -top-10 w-48 h-48 bg-sky-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+                <div className="space-y-1.5 min-w-0">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[11px] font-extrabold uppercase tracking-wider">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                    <span>🏆 Sabse Nearest Hospital</span>
+                  </div>
+
+                  <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight truncate">
+                    {nearestHospital.name}
+                  </h3>
+
+                  <p className="text-xs text-slate-300 font-medium flex items-center gap-1.5 truncate">
+                    <MapPin className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                    <span>{nearestHospital.address}, {nearestHospital.city}, {nearestHospital.state}</span>
+                  </p>
+                </div>
+
+                {/* Distance & ETA Badge */}
+                <div className="flex items-center gap-3 shrink-0">
+                  <div className="px-4 py-2.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 text-center">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Road Distance</p>
+                    <p className="text-lg font-black text-sky-300">
+                      {nearestHospital.distanceKm !== null ? `${nearestHospital.distanceKm} km door` : 'Closest'}
+                    </p>
+                  </div>
+
+                  {nearestHospital.estTravelMinutes && (
+                    <div className="px-4 py-2.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 text-center">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Est. Travel Time</p>
+                      <p className="text-lg font-black text-emerald-300">
+                        ~{nearestHospital.estTravelMinutes} mins
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Capacity & Live Facilities Row */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2 border-t border-white/10 relative z-10 text-xs">
+                <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
+                  <span className="text-[10px] text-slate-400 font-bold block">General Beds</span>
+                  <span className="text-sm font-black text-white">
+                    {nearestHospital.capacitySummary?.general?.available ?? 0} Available
+                  </span>
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
+                  <span className="text-[10px] text-slate-400 font-bold block">ICU Beds</span>
+                  <span className="text-sm font-black text-emerald-400">
+                    {nearestHospital.capacitySummary?.icu?.available ?? 0} Available
+                  </span>
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
+                  <span className="text-[10px] text-slate-400 font-bold block">Emergency Status</span>
+                  <span className="text-sm font-black text-rose-400">
+                    {nearestHospital.emergencyAvailable ? '🚨 24/7 Active' : 'Regular OPD'}
+                  </span>
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
+                  <span className="text-[10px] text-slate-400 font-bold block">Data Freshness</span>
+                  <span className="text-sm font-black text-sky-400">
+                    {nearestHospital.freshness?.label || 'Live Verified'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap items-center gap-3 pt-2 relative z-10">
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&origin=${userLocation?.lat || ''},${userLocation?.lng || ''}&destination=${nearestHospital.location?.coordinates?.[1] || ''},${nearestHospital.location?.coordinates?.[0] || ''}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-5 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-black text-xs transition-all shadow-md flex items-center gap-2 cursor-pointer"
+                >
+                  <Navigation className="w-4 h-4" />
+                  <span>Get Driving Directions (Google Maps)</span>
+                </a>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedHospital(nearestHospital);
+                    setShowDetailModal(true);
+                  }}
+                  className="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/20 transition-colors flex items-center gap-2 cursor-pointer"
+                >
+                  <span>View Doctors &amp; Full Hospital Details</span>
+                  <ArrowRight className="w-3.5 h-3.5 text-sky-400" />
+                </button>
+
+                {nearestHospital.phone && (
+                  <a
+                    href={`tel:${nearestHospital.phone}`}
+                    className="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition-colors flex items-center gap-1.5 cursor-pointer ml-auto"
+                  >
+                    <PhoneCall className="w-3.5 h-3.5" />
+                    <span>Call: {nearestHospital.phone}</span>
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Hospitals Grid */}
           {loading ? (

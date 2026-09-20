@@ -125,38 +125,68 @@ export const getPlaceCoordinates = async (placeId) => {
   });
 };
 
-/**
- * Reverse geocode lat/lng to readable location name
- */
 export const reverseGeocode = async (lat, lng) => {
+  // 1. Try Google Maps Geocoder first
   try {
     await loadGoogleMaps();
-    const geocoder = new window.google.maps.Geocoder();
+    if (window.google?.maps?.Geocoder) {
+      const geocoder = new window.google.maps.Geocoder();
+      const googleResult = await new Promise((resolve) => {
+        geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+          if (status === 'OK' && results?.[0]) {
+            const comp = results[0].address_components || [];
+            const locality = comp.find(
+              (c) => c.types.includes('locality') || c.types.includes('sublocality_level_1')
+            )?.long_name;
+            const district = comp.find((c) =>
+              c.types.includes('administrative_area_level_2')
+            )?.long_name;
 
-    return new Promise((resolve) => {
-      geocoder.geocode({ location: { lat, lng } }, (results, status) => {
-        if (status === 'OK' && results?.[0]) {
-          const comp = results[0].address_components || [];
-          const locality = comp.find(
-            (c) => c.types.includes('locality') || c.types.includes('sublocality_level_1')
-          )?.long_name;
-          const district = comp.find((c) =>
-            c.types.includes('administrative_area_level_2')
-          )?.long_name;
+            const label = locality
+              ? `${locality}${district && district !== locality ? ', ' + district : ''}`
+              : results[0].formatted_address.split(',').slice(0, 2).join(',');
 
-          const label = locality
-            ? `${locality}${district && district !== locality ? ', ' + district : ''}`
-            : results[0].formatted_address.split(',').slice(0, 2).join(',');
-
-          resolve(label);
-        } else {
-          resolve(null);
-        }
+            resolve(label);
+          } else {
+            resolve(null);
+          }
+        });
       });
-    });
-  } catch {
-    return null;
+      if (googleResult) return googleResult;
+    }
+  } catch (err) {
+    console.warn('Google reverseGeocode error, falling back to OSM:', err.message);
   }
+
+  // 2. OpenStreetMap Nominatim fallback for reliable human-readable location
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=14&addressdetails=1`,
+      {
+        headers: { 'Accept-Language': 'en,hi' },
+      }
+    );
+    if (res.ok) {
+      const data = await res.json();
+      const addr = data.address || {};
+      const locality =
+        addr.suburb ||
+        addr.neighbourhood ||
+        addr.city ||
+        addr.town ||
+        addr.village ||
+        addr.county;
+      const districtOrState = addr.state_district || addr.state;
+      if (locality && districtOrState && locality !== districtOrState) {
+        return `${locality}, ${districtOrState}`;
+      }
+      return locality || data.display_name?.split(',').slice(0, 2).join(',') || null;
+    }
+  } catch (osmErr) {
+    console.warn('OSM reverse geocode error:', osmErr.message);
+  }
+
+  return null;
 };
 
 /**

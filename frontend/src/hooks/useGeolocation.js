@@ -15,18 +15,42 @@ const DEFAULT_CENTER = {
   name: '📍 Khalilabad, Sant Kabir Nagar',
 };
 
+const getInitialState = () => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed.lat && parsed.lng) {
+        return {
+          location: { lat: parseFloat(parsed.lat), lng: parseFloat(parsed.lng) },
+          name: parsed.name || '📍 Saved Location',
+          source: parsed.source || 'saved',
+        };
+      }
+    }
+  } catch {
+    // fallback
+  }
+  return {
+    location: { lat: DEFAULT_CENTER.lat, lng: DEFAULT_CENTER.lng },
+    name: DEFAULT_CENTER.name,
+    source: 'default',
+  };
+};
+
 /**
  * useGeolocation — Comprehensive Location Management
  * 
  * 1. Saved location in localStorage (e.g. Khalilabad, Sant Kabir Nagar)
  * 2. Browser GPS (navigator.geolocation with Google Reverse Geocoding)
- * 3. IP-based geolocation (ipapi.co)
+ * 3. IP-based geolocation (ipwho.is / ipapi.co)
  * 4. Default fallback (Khalilabad, Sant Kabir Nagar)
  */
 const useGeolocation = () => {
-  const [location, setLocation] = useState(null); // { lat, lng }
-  const [locationName, setLocationName] = useState('Detecting location...');
-  const [locationSource, setLocationSource] = useState(''); // 'saved' | 'gps' | 'ip' | 'manual' | 'default'
+  const [initial] = useState(getInitialState);
+  const [location, setLocation] = useState(initial.location);
+  const [locationName, setLocationName] = useState(initial.name);
+  const [locationSource, setLocationSource] = useState(initial.source);
   const [locating, setLocating] = useState(false);
 
   // Set location manually (via quick chips, search, or map click) and persist

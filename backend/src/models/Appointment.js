@@ -12,6 +12,26 @@ const AppointmentSchema = new mongoose.Schema(
       ref: 'User',
       required: [true, 'Please associate a doctor'],
     },
+    hospital: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Hospital',
+    },
+    hospitalName: {
+      type: String,
+      default: '',
+    },
+    doctorName: {
+      type: String,
+      default: '',
+    },
+    doctorSpecialization: {
+      type: String,
+      default: '',
+    },
+    fee: {
+      type: Number,
+      default: 500,
+    },
     date: {
       type: Date,
       required: [true, 'Please specify appointment date'],

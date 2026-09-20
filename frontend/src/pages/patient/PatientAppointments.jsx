@@ -48,7 +48,7 @@ const PatientAppointments = () => {
             targetName.includes(d.user?.name?.toLowerCase() || '')
           );
           if (matched) {
-            setForm((prev) => ({ ...prev, doctor: matched._id }));
+            setForm((prev) => ({ ...prev, doctor: matched.user?._id || matched._id }));
           }
         }
       }
@@ -190,8 +190,13 @@ const PatientAppointments = () => {
                             <Stethoscope className="w-4 h-4" />
                           </div>
                           <div>
-                            <div className="font-semibold text-slate-900">Dr. {a.doctor?.name}</div>
-                            <div className="text-[11px] text-slate-500">{a.doctor?.email}</div>
+                            <div className="font-semibold text-slate-900">
+                              Dr. {a.doctor?.name || a.doctorName || 'Specialist'}
+                            </div>
+                            <div className="text-[11px] text-slate-500">
+                              {a.doctorSpecialization || a.doctor?.specialization || 'Clinical Specialist'}
+                              {(a.hospitalName || a.hospital?.name) && ` • 🏥 ${a.hospitalName || a.hospital?.name}`}
+                            </div>
                           </div>
                         </div>
                       </td>
@@ -240,7 +245,7 @@ const PatientAppointments = () => {
 
         {/* Modal: Book Consultation */}
         {showModal && (
-          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-[9999] animate-in fade-in duration-150">
             <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-150">
               <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
                 <div className="flex items-center gap-2.5">
@@ -272,11 +277,14 @@ const PatientAppointments = () => {
                     className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-hidden focus:border-sky-500 focus:ring-3 focus:ring-sky-500/15"
                   >
                     <option value="">-- Choose Doctor --</option>
-                    {doctors.map((d) => (
-                      <option key={d._id} value={d.user?._id}>
-                        Dr. {d.user?.name} ({d.specialization}) — Fee: ₹{d.consultationFee}
-                      </option>
-                    ))}
+                    {doctors.map((d) => {
+                      const docId = d.user?._id || d._id;
+                      return (
+                        <option key={d._id} value={docId}>
+                          Dr. {d.user?.name || d.name} ({d.specialization}) — Fee: ₹{d.consultationFee || 450}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
 

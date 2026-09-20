@@ -135,15 +135,19 @@ const HospitalDetailPanel = ({ hospital, userLocation, onClose }) => {
     try {
       const payload = {
         doctor: bookingDoctor.user?._id || bookingDoctor._id,
+        doctorName: bookingDoctor.user?.name || bookingDoctor.name || 'Specialist',
+        doctorSpecialization: bookingDoctor.specialization || 'General Medicine',
         hospital: h._id,
+        hospitalName: h.name,
+        fee: bookingDoctor.consultationFee || 450,
         date: bookingForm.date,
         time: bookingForm.time,
-        reason: bookingForm.reason || `OPD consultation with ${bookingDoctor.user?.name || 'doctor'}`,
+        reason: bookingForm.reason || `OPD consultation with ${bookingDoctor.user?.name || bookingDoctor.name || 'doctor'}`,
       };
 
       const res = await api.post('/appointments', payload);
       if (res.data.success) {
-        toast.success(`OPD Appointment reserved with ${bookingDoctor.user?.name}!`);
+        toast.success(`OPD Appointment reserved with ${bookingDoctor.user?.name || bookingDoctor.name}!`);
         setBookingSuccess(res.data.data || { date: bookingForm.date, time: bookingForm.time });
       }
     } catch (err) {

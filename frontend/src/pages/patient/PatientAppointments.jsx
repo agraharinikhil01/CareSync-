@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import api from '../../services/api';
 import DashboardLayout from '../../layouts/DashboardLayout';
 import { Calendar, Plus, Clock, Stethoscope, X, AlertCircle, Sparkles, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const PatientAppointments = () => {
+  const location = useLocation();
   const [appointments, setAppointments] = useState([]);
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -12,7 +14,7 @@ const PatientAppointments = () => {
 
   const [form, setForm] = useState({
     doctor: '',
-    date: new Date().toISOString().split('T')[0],
+    date: new Date(Date.now() + 86400000).toISOString().split('T')[0],
     time: '10:00 AM',
     reason: '',
   });
@@ -22,10 +24,34 @@ const PatientAppointments = () => {
     fetchDoctors();
   }, []);
 
+  useEffect(() => {
+    if (location.state?.doctorName || location.state?.hospitalName) {
+      setShowModal(true);
+      if (location.state.specialization) {
+        setForm((prev) => ({
+          ...prev,
+          reason: `OPD consultation for ${location.state.specialization}`,
+        }));
+      }
+    }
+  }, [location.state]);
+
   const fetchDoctors = async () => {
     try {
       const res = await api.get('/doctors');
-      if (res.data.success) setDoctors(res.data.data);
+      if (res.data.success) {
+        setDoctors(res.data.data);
+        if (location.state?.doctorName) {
+          const targetName = location.state.doctorName.toLowerCase();
+          const matched = res.data.data.find((d) =>
+            d.user?.name?.toLowerCase().includes(targetName) ||
+            targetName.includes(d.user?.name?.toLowerCase() || '')
+          );
+          if (matched) {
+            setForm((prev) => ({ ...prev, doctor: matched._id }));
+          }
+        }
+      }
     } catch {
       console.log('Error loading doctors');
     }

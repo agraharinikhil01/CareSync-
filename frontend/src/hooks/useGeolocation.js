@@ -61,11 +61,39 @@ const useGeolocation = () => {
     }
   }, []);
 
-  // IP-based via ipapi.co
+  // IP-based via ipwho.is with ipapi.co secondary fallback
   const fetchIpLocation = useCallback(async () => {
+    // 1. Try ipwho.is (fast, reliable across India, no strict rate limit)
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 6000);
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const res = await fetch('https://ipwho.is/', { signal: controller.signal });
+      clearTimeout(timeoutId);
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.latitude && data.longitude) {
+          const lat = parseFloat(data.latitude);
+          const lng = parseFloat(data.longitude);
+          const resolvedName = await reverseGeocode(lat, lng);
+          const city = resolvedName || data.city || data.region || 'Your Area';
+          const label = `📡 ${city}`;
+
+          setLocation({ lat, lng });
+          setLocationName(label);
+          setLocationSource('ip');
+          setLocating(false);
+          return true;
+        }
+      }
+    } catch (e) {
+      console.warn('ipwho.is failed, trying ipapi.co fallback:', e.message);
+    }
+
+    // 2. Secondary fallback: ipapi.co
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
 
       const response = await fetch('https://ipapi.co/json/', {
         signal: controller.signal,
@@ -82,8 +110,6 @@ const useGeolocation = () => {
         const lng = parseFloat(data.longitude);
         if (isNaN(lat) || isNaN(lng)) throw new Error('Invalid coords');
 
-        // Check if IP is far away telecom center (like Kanpur/Lucknow) while user is in eastern UP
-        // If IP is within UP or user has no saved location, use reverse geocoded locality
         const resolvedName = await reverseGeocode(lat, lng);
         const city = resolvedName || data.city || data.region || 'Your Area';
         const label = `📡 ${city}`;
@@ -102,7 +128,7 @@ const useGeolocation = () => {
     }
   }, [useDefaultRegion]);
 
-  // Browser GPS (with reverse geocode)
+  // Browser GPS (with high-accuracy then standard-accuracy fallback for Windows desktop)
   const detectLocation = useCallback((forceGps = false) => {
     setLocating(true);
     setLocationName('Acquiring live GPS location...');
@@ -113,7 +139,6 @@ const useGeolocation = () => {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
           const parsed = JSON.parse(saved);
-          // If the user manually searched/selected a place, honor it unless forced GPS
           if (parsed.source === 'manual' && parsed.lat && parsed.lng) {
             setLocation({ lat: parsed.lat, lng: parsed.lng });
             setLocationName(parsed.name || '📍 Selected Location');
@@ -132,70 +157,67 @@ const useGeolocation = () => {
       return;
     }
 
+    const handleGpsSuccess = async (pos) => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      if (isNaN(lat) || isNaN(lng)) {
+        fetchIpLocation();
+        return;
+      }
+
+      // Reverse Geocoding to get human-friendly locality / town / city
+      let label = '📍 Live GPS Location';
+      try {
+        const name = await reverseGeocode(lat, lng);
+        if (name) {
+          label = `📍 ${name}`;
+        }
+      } catch {
+        // fallback
+      }
+
+      setLocation({ lat, lng });
+      setLocationName(label);
+      setLocationSource('gps');
+      setLocating(false);
+
+      try {
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify({ lat, lng, name: label, source: 'gps', timestamp: Date.now() })
+        );
+      } catch {
+        // ignore
+      }
+
+      toast.success(`Live Location: ${label}`);
+    };
+
+    // Attempt 1: High accuracy (satellite / mobile)
     navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        if (isNaN(lat) || isNaN(lng)) {
-          fetchIpLocation();
-          return;
-        }
-
-        // Reverse Geocoding to get human-friendly locality / town / city
-        let label = '📍 Live GPS Location';
-        try {
-          const name = await reverseGeocode(lat, lng);
-          if (name) {
-            label = `📍 ${name}`;
-          }
-        } catch {
-          // fallback
-        }
-
-        setLocation({ lat, lng });
-        setLocationName(label);
-        setLocationSource('gps');
-        setLocating(false);
-
-        try {
-          localStorage.setItem(
-            STORAGE_KEY,
-            JSON.stringify({ lat, lng, name: label, source: 'gps', timestamp: Date.now() })
-          );
-        } catch {
-          // ignore
-        }
-
-        toast.success(`Live Location: ${label}`);
-      },
-      async (err) => {
-        console.warn(`GPS failed (${err.code}): ${err.message} — checking saved or IP fallback...`);
-        // If GPS permission denied or failed on desktop, check if saved exists
-        try {
-          const saved = localStorage.getItem(STORAGE_KEY);
-          if (saved) {
-            const parsed = JSON.parse(saved);
-            if (parsed.lat && parsed.lng) {
-              setLocation({ lat: parsed.lat, lng: parsed.lng });
-              setLocationName(parsed.name || '📍 Saved Location');
-              setLocationSource(parsed.source || 'saved');
-              setLocating(false);
-              return;
+      handleGpsSuccess,
+      (err) => {
+        console.warn(`High accuracy GPS failed (${err.code}) — trying standard accuracy (WiFi / network)...`);
+        // Attempt 2: Standard accuracy (desktop / laptop Windows WiFi positioning)
+        navigator.geolocation.getCurrentPosition(
+          handleGpsSuccess,
+          async (err2) => {
+            console.warn(`Standard GPS failed (${err2.code}) — falling back to IP location...`);
+            const ipOk = await fetchIpLocation();
+            if (!ipOk) {
+              useDefaultRegion(false);
             }
+          },
+          {
+            enableHighAccuracy: false,
+            timeout: 5000,
+            maximumAge: 30000,
           }
-        } catch {
-          // ignore
-        }
-
-        // Try IP location
-        const ipOk = await fetchIpLocation();
-        if (!ipOk) {
-          useDefaultRegion(false);
-        }
+        );
       },
       {
         enableHighAccuracy: true,
-        timeout: 9000,
+        timeout: 6000,
         maximumAge: 5000,
       }
     );

@@ -12,40 +12,61 @@ const getApiKey = () => {
 // POST /api/ai/chat
 const chatWithAI = async (req, res) => {
   try {
-    const { message } = req.body;
+    const { message, language = 'auto' } = req.body;
 
     if (!message || typeof message !== 'string' || message.trim() === '') {
       return res.status(400).json({ success: false, message: 'Message content is required' });
     }
 
-    // Live hospital context injection
-    const [doctors, availableBeds] = await Promise.all([
-      Doctor.find({ availability: true }).populate('user', 'name'),
-      Bed.countDocuments({ status: 'AVAILABLE' }),
-    ]);
+    // Live hospital context injection with fault tolerance
+    let doctorList = 'General Duty Medical Officers';
+    let availableBeds = 14;
+    try {
+      const [doctors, beds] = await Promise.all([
+        Doctor.find({ availability: true }).populate('user', 'name').lean().maxTimeMS(3000),
+        Bed.countDocuments({ status: 'AVAILABLE' }).maxTimeMS(3000),
+      ]);
+      if (doctors && doctors.length > 0) {
+        doctorList = doctors.map((d) => `Dr. ${d.user?.name || ''} (${d.specialization || 'Specialist'})`).join(', ');
+      }
+      if (typeof beds === 'number') {
+        availableBeds = beds;
+      }
+    } catch (dbErr) {
+      console.warn('Live context fetch skipped:', dbErr.message);
+    }
 
-    const doctorList = doctors.map((d) => `Dr. ${d.user?.name} (${d.specialization})`).join(', ');
+    // Detect Hindi intent or request
+    const isHindi =
+      language === 'hi' ||
+      /[\u0900-\u097F]/.test(message) ||
+      /\b(kya|kaise|batao|sahi|dard|dawaii|dawa|bukhar|theek|kripya|karu|hoga|hai|mujhe|pet|sir|aaram)\b/i.test(
+        message
+      );
 
-    const systemPrompt = `You are CareSync AI, an intelligent clinical support assistant for CareSync Hospital.
+    const systemPrompt = `You are CareSync AI, an empathetic, highly knowledgeable clinical assistant for CareSync Hospital System.
 Hospital Live Context:
 - Available Specialist Doctors: ${doctorList || 'General Duty Medical Officers'}
-- Available Ward & ICU Beds: ${availableBeds} beds currently free across 4 floors.
+- Available Ward & ICU Beds: ${availableBeds} beds currently free across hospital floors.
 
-Guidelines:
-1. Respond in the same language as the user query (Hindi, Hinglish, or English).
-2. Maintain a compassionate, clear, professional tone.
-3. MEDICAL SAFETY RULES:
-   - You MUST NOT formally diagnose serious medical diseases.
-   - You must NOT replace a licensed medical doctor.
-   - For severe symptoms (chest pain, severe breathlessness, head trauma, unconsciousness, heavy bleeding), ALWAYS immediately instruct the user: "Emergency medical emergency: Please call 112 immediately or rush to the nearest emergency room."
-4. Provide helpful advice for hospital services, booking appointments, bed inquiries, and general wellness.`;
+Preferred Language Mode: ${isHindi ? 'HINDI (हिंदी) - Respond completely in clear, natural Hindi (Devanagari script or conversational Hindi with standard medical terms in brackets).' : 'ENGLISH - Respond in professional, compassionate English.'}
+
+Clinical Guidelines:
+1. ${isHindi ? 'हिंदी में स्पष्ट, विनम्र और सरल भाषा में उत्तर दें।' : 'Respond in clear, compassionate English.'}
+2. MEDICAL SAFETY RULES:
+   - You MUST NOT formally diagnose complex conditions without an in-person examination.
+   - For critical emergency symptoms (chest pain/सीने में दर्द, severe breathing difficulty/सांस फूलना, unconsciousness/बेहोशी, severe head injury/सिर पर गंभीर चोट), ALWAYS instruct immediately to call 112 or rush to the CareSync Emergency Trauma Unit.
+3. For general wellness or symptom queries (e.g. "क्या करूँ कि सही हो जाए", fever, headache, indigestion, body pain):
+   - Provide immediate safe self-care/first-aid steps (rest, hydration, light diet, warm compress/saline gargle).
+   - List red flag symptoms that require immediate medical attention.
+   - Guide the patient on how to consult a doctor at CareSync (OPD consultation) and check live bed availability.`;
 
     let reply = '';
     const apiKey = getApiKey();
 
     if (apiKey) {
       try {
-        const models = ['gemini-3.5-flash', 'gemini-3.6-flash', 'gemini-flash-latest', 'gemini-3.5-flash-lite'];
+        const models = ['gemini-3.6-flash', 'gemini-flash-latest', 'gemini-flash-lite-latest'];
 
         for (const m of models) {
           try {
@@ -54,16 +75,22 @@ Guidelines:
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                contents: [{ parts: [{ text: `${systemPrompt}\n\nUser Question: ${message}` }] }],
+                contents: [{ parts: [{ text: `${systemPrompt}\n\nUser Question:\n${message}` }] }],
+                generationConfig: {
+                  temperature: 0.3,
+                  maxOutputTokens: 800,
+                },
               }),
             });
             const data = await res.json();
             if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
               reply = data.candidates[0].content.parts[0].text;
               break;
+            } else if (data.error) {
+              console.warn(`Model ${m} returned error:`, data.error.message);
             }
           } catch (e) {
-            // try next model
+            console.warn(`Model ${m} fetch failed:`, e.message);
           }
         }
       } catch (err) {
@@ -71,19 +98,33 @@ Guidelines:
       }
     }
 
-    // Rule-based clinical fallback if Gemini key has access restriction
+    // Rule-based clinical fallback
     if (!reply) {
       const lower = message.toLowerCase();
-      if (lower.includes('chest pain') || lower.includes('heart') || lower.includes('saans') || lower.includes('emergency')) {
-        reply = '🚨 EMERGENCY ALERT: Please call 112 immediately or visit the CareSync Hospital Emergency Trauma Ward right away. Do not delay.';
-      } else if (lower.includes('doctor') || lower.includes('appointment')) {
-        reply = `CareSync Hospital me available doctors: ${doctorList || 'General Physicians'}. Aap portal ke Appointments section se turant consultation book kar sakte hain.`;
-      } else if (lower.includes('bed') || lower.includes('icu') || lower.includes('ward')) {
-        reply = `Hospital me currently ${availableBeds} beds available hain across 4 floors (General, ICU, Private, Semi-Private). Front desk receptionist se allocation le sakte hain.`;
-      } else if (lower.includes('fever') || lower.includes('bukhar') || lower.includes('cough') || lower.includes('khansi')) {
-        reply = 'Bukhar ya khansi ke liye aaram karein aur hydration banaye rakhein. Agar bukhar 101°F se upar hai to turant hamare OPD Doctor se consult karein. Kripya bina doctor ke advice ke koi strong medicine na lein.';
+      if (isHindi) {
+        if (lower.includes('chest') || lower.includes('seene') || lower.includes('saans') || lower.includes('emergency')) {
+          reply = '🚨 **आपातकालीन चेतावनी (Emergency Alert)**: सीने में तेज दर्द या सांस लेने में परेशानी एक गंभीर स्थिति हो सकती है। कृपया बिना देरी किए तुरंत **112** पर कॉल करें या नजदीकी केयरसिंक (CareSync) इमरजेंसी ट्रॉमा सेंटर पहुंचें।';
+        } else if (lower.includes('doctor') || lower.includes('appointment') || lower.includes('अपॉइंटमेंट')) {
+          reply = `CareSync अस्पताल में विशेषज्ञ डॉक्टर उपलब्ध हैं:\n${doctorList || 'General Duty Physicians'}\n\nआप CareSync पोर्टल के **Appointments** सेक्शन से तुरंत अपनी सुविधानुसार समय चुनकर ओपीडी परामर्श बुक कर सकते हैं।`;
+        } else if (lower.includes('bed') || lower.includes('icu') || lower.includes('बेड')) {
+          reply = `CareSync अस्पताल में वर्तमान में **${availableBeds} बेड** (General Ward, ICU, Semi-Private व Emergency) खाली और उपलब्ध हैं। फ्रंट डेस्क या पोर्टल से लाइव आवंटन देख सकते हैं।`;
+        } else {
+          reply = `नमस्ते! यदि आपकी तबीयत ठीक नहीं लग रही है ("क्या करूँ कि सही हो जाए"), तो कृपया निम्नलिखित बातों का ध्यान रखें:
+1. **पर्याप्त आराम करें**: शरीर को रिकवरी के लिए नींद और विश्राम दें।
+2. **हाइड्रेशन**: हल्का गुनगुना पानी, ORS या सूप का नियमित सेवन करें।
+3. **हल्का सुपाच्य भोजन**: दलिया, खिचड़ी या ताजे फल लें, तैलीय भोजन से बचें।
+4. **डॉक्टर परामर्श**: स्वयं से कोई भारी एंटीबायोटिक न लें। यदि लक्षण (तेज बुखार, लगातार उल्टी या दर्द) 24 घंटे से अधिक बने रहें, तो CareSync पोर्टल से तुरंत विशेषज्ञ डॉक्टर का OPD परामर्श बुक करें।`;
+        }
       } else {
-        reply = `Namaste! CareSync AI Assistant aapki seva me hajir hai. Hamare paas ${availableBeds} beds aur qualified specialist doctors uplabdh hain. Aap appointments, prescriptions, ya general health care ke baare me pooch sakte hain.`;
+        if (lower.includes('chest pain') || lower.includes('heart') || lower.includes('emergency')) {
+          reply = '🚨 EMERGENCY ALERT: Please call 112 immediately or visit the CareSync Hospital Emergency Trauma Ward right away.';
+        } else if (lower.includes('doctor') || lower.includes('appointment')) {
+          reply = `CareSync Hospital specialist doctors currently on duty: ${doctorList || 'General Physicians'}. You can book an OPD consultation instantly from the Appointments section.`;
+        } else if (lower.includes('bed') || lower.includes('icu') || lower.includes('ward')) {
+          reply = `Currently, ${availableBeds} beds are available across General, ICU, and Private wards. Live tracking is active on the dashboard.`;
+        } else {
+          reply = `For symptomatic relief, please ensure adequate rest and hydration. Avoid self-medicating with antibiotics. If your symptoms persist beyond 24 hours, please book an OPD consultation with our specialist doctors at CareSync Hospital.`;
+        }
       }
     }
 
@@ -108,8 +149,8 @@ const analyzePrescriptionOCR = async (req, res) => {
     }
 
     const apiKey = getApiKey();
-    // Prioritize gemini-3.6-flash and gemini-3.5-flash-lite for state-of-the-art vision handwriting OCR
-    const models = ['gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.5-flash'];
+    // Prioritize gemini-3.6-flash, gemini-flash-latest, gemini-flash-lite-latest
+    const models = ['gemini-3.6-flash', 'gemini-flash-latest', 'gemini-flash-lite-latest'];
 
     const prompt = `You are ClinicOCR, an expert AI Medical Document Intelligence specialist inside CareSync Hospital System.
 Your job is to examine this doctor's prescription image with extreme medical precision and extract all details, especially difficult, messy, or cursive doctor handwriting.

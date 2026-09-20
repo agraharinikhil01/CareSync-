@@ -60,5 +60,20 @@
 }
 
 .animate-float {
-  animation: float 4.5s ease-in-out infinite;
+  animation: float 4s ease-in-out infinite;
+}
+
+/* Prevent Leaflet elements from bleeding over fixed modals or dialogs */
+.leaflet-container {
+  z-index: 1 !important;
+}
+.leaflet-pane {
+  z-index: 2 !important;
+}
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 3 !important;
+}
+.leaflet-control {
+  z-index: 4 !important;
 }

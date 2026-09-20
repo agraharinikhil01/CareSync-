@@ -182,13 +182,13 @@ const HospitalMap = ({
 
   return (
     <div
-      className={`relative w-full rounded-3xl overflow-hidden shadow-2xl border border-slate-800/40 bg-slate-950 font-sans select-none ${className}`}
+      className={`isolate z-0 relative w-full rounded-3xl overflow-hidden shadow-2xl border border-slate-800/40 bg-slate-950 font-sans select-none ${className}`}
       style={{ height }}
     >
       <MapContainer
         center={activeCenter}
         zoom={zoom}
-        scrollWheelZoom={true}
+        scrollWheelZoom={false}
         ref={mapRef}
         style={{ width: '100%', height: '100%', minHeight: '380px' }}
       >

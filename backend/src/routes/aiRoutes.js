@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { chatWithAI, analyzePrescriptionOCR } = require('../controllers/aiController');
-const { protect } = require('../middleware/authMiddleware');
+const { optionalAuth } = require('../middleware/authMiddleware');
 
-router.post('/chat', protect, chatWithAI);
-router.post('/analyze-prescription', protect, analyzePrescriptionOCR);
+router.post('/chat', optionalAuth, chatWithAI);
+router.post('/analyze-prescription', optionalAuth, analyzePrescriptionOCR);
 
 module.exports = router;

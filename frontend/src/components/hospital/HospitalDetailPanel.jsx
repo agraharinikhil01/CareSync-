@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
+import toast from 'react-hot-toast';
 import {
   X,
   Building2,
@@ -28,10 +30,21 @@ import {
 
 const HospitalDetailPanel = ({ hospital, userLocation, onClose }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [details, setDetails] = useState(hospital);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('doctors'); // 'doctors' | 'beds' | 'facilities'
   const [doctorSearch, setDoctorSearch] = useState('');
+
+  // Instant OPD Booking state
+  const [bookingDoctor, setBookingDoctor] = useState(null);
+  const [bookingForm, setBookingForm] = useState({
+    date: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+    time: '10:00 AM',
+    reason: '',
+  });
+  const [bookingSubmitting, setBookingSubmitting] = useState(false);
+  const [bookingSuccess, setBookingSuccess] = useState(null);
 
   // Fetch full hospital details including doctor roster and bed inventory
   useEffect(() => {
@@ -90,18 +103,58 @@ const HospitalDetailPanel = ({ hospital, userLocation, onClose }) => {
   });
 
   const handleBookDoctor = (doc) => {
-    navigate('/patient/appointments', {
-      state: {
-        hospitalId: h._id,
-        hospitalName: h.name,
-        doctorName: doc.user?.name,
-        specialization: doc.specialization,
-      },
+    setBookingDoctor(doc);
+    setBookingSuccess(null);
+    setBookingForm({
+      date: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+      time: '10:00 AM',
+      reason: doc.treatedConditions ? `Consultation for ${doc.specialization}` : '',
     });
   };
 
+  const handleConfirmBooking = async (e) => {
+    e.preventDefault();
+    if (!user) {
+      toast.error('Please sign in to confirm this consultation');
+      navigate('/login', {
+        state: {
+          from: window.location.pathname,
+          hospitalId: h._id,
+          doctorName: bookingDoctor?.user?.name,
+        },
+      });
+      return;
+    }
+
+    if (!bookingForm.date) {
+      toast.error('Please select an appointment date');
+      return;
+    }
+
+    setBookingSubmitting(true);
+    try {
+      const payload = {
+        doctor: bookingDoctor.user?._id || bookingDoctor._id,
+        hospital: h._id,
+        date: bookingForm.date,
+        time: bookingForm.time,
+        reason: bookingForm.reason || `OPD consultation with ${bookingDoctor.user?.name || 'doctor'}`,
+      };
+
+      const res = await api.post('/appointments', payload);
+      if (res.data.success) {
+        toast.success(`OPD Appointment reserved with ${bookingDoctor.user?.name}!`);
+        setBookingSuccess(res.data.data || { date: bookingForm.date, time: bookingForm.time });
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Appointment slot conflict. Please select another slot.');
+    } finally {
+      setBookingSubmitting(false);
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 animate-fadeIn">
+    <div className="fixed inset-0 z-[9999] overflow-y-auto bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 animate-fadeIn">
       <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-4xl w-full max-h-[92vh] flex flex-col overflow-hidden">
         {/* TOP HEADER */}
         <div className="p-4 sm:p-6 bg-slate-900 text-white relative flex-shrink-0">
@@ -491,6 +544,162 @@ const HospitalDetailPanel = ({ hospital, userLocation, onClose }) => {
           )}
         </div>
       </div>
+
+      {/* Instant OPD Booking Modal Overlay */}
+      {bookingDoctor && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-lg w-full overflow-hidden animate-fadeIn">
+            {/* Dialog Header */}
+            <div className="p-5 bg-gradient-to-r from-sky-600 to-teal-600 text-white flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center">
+                  <Calendar className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-black text-base leading-tight">Book OPD Appointment</h3>
+                  <p className="text-xs text-sky-100 mt-0.5">{h.name}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setBookingDoctor(null);
+                  setBookingSuccess(null);
+                }}
+                className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {bookingSuccess ? (
+              /* Success Screen */
+              <div className="p-6 text-center space-y-4">
+                <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-sm">
+                  <CheckCircle2 className="w-8 h-8" />
+                </div>
+                <div>
+                  <h4 className="text-lg font-black text-slate-900">OPD Consultation Confirmed!</h4>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Your appointment with <strong>{bookingDoctor.user?.name}</strong> at <strong>{h.name}</strong> is reserved.
+                  </p>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-left text-xs space-y-1.5 text-slate-700">
+                  <p><strong>📅 Date:</strong> {bookingForm.date}</p>
+                  <p><strong>⏰ Slot:</strong> {bookingForm.time}</p>
+                  <p><strong>🩺 Doctor:</strong> {bookingDoctor.user?.name} ({bookingDoctor.specialization})</p>
+                  <p><strong>💰 Consultation Fee:</strong> ₹{bookingDoctor.consultationFee || 400} (Pay at hospital counter)</p>
+                </div>
+
+                <div className="flex items-center gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBookingDoctor(null);
+                      navigate('/patient/appointments');
+                    }}
+                    className="flex-1 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors cursor-pointer shadow-sm"
+                  >
+                    View in My Consultations
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBookingDoctor(null);
+                      setBookingSuccess(null);
+                    }}
+                    className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50 cursor-pointer"
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* Booking Form */
+              <form onSubmit={handleConfirmBooking} className="p-5 space-y-4 text-xs">
+                {/* Doctor Summary Card */}
+                <div className="p-3.5 rounded-2xl bg-sky-50/70 border border-sky-200 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="font-black text-sm text-slate-900">{bookingDoctor.user?.name}</p>
+                    <p className="text-[11px] text-sky-800 font-bold">{bookingDoctor.designation || bookingDoctor.specialization}</p>
+                    <p className="text-[10px] text-slate-500 mt-0.5">{bookingDoctor.qualification || 'MBBS, MD'} • {bookingDoctor.experience || 8}+ Yrs Exp</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="text-[9px] font-bold text-emerald-700 block uppercase">OPD Fee</span>
+                    <span className="text-base font-black text-emerald-800">₹{bookingDoctor.consultationFee || 400}</span>
+                  </div>
+                </div>
+
+                {/* Date Picker */}
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Select Consultation Date</label>
+                  <input
+                    type="date"
+                    required
+                    min={new Date().toISOString().split('T')[0]}
+                    value={bookingForm.date}
+                    onChange={(e) => setBookingForm({ ...bookingForm, date: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  />
+                </div>
+
+                {/* Time Slot Picker */}
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Select Preferred Time Slot</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {['09:30 AM', '10:30 AM', '11:30 AM', '12:30 PM', '01:30 PM', '02:30 PM'].map((slot) => (
+                      <button
+                        type="button"
+                        key={slot}
+                        onClick={() => setBookingForm({ ...bookingForm, time: slot })}
+                        className={`py-2 px-2 rounded-xl font-bold text-center border transition-all cursor-pointer ${
+                          bookingForm.time === slot
+                            ? 'bg-sky-600 text-white border-sky-600 shadow-sm'
+                            : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        {slot}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Symptoms / Reason */}
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Symptoms / Reason for Visit (Optional)</label>
+                  <textarea
+                    rows={2}
+                    placeholder="Describe symptoms, e.g. headache, fever, pain, follow-up..."
+                    value={bookingForm.reason}
+                    onChange={(e) => setBookingForm({ ...bookingForm, reason: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  />
+                </div>
+
+                {/* Action Button */}
+                <button
+                  type="submit"
+                  disabled={bookingSubmitting}
+                  className="w-full py-3 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-xs shadow-md shadow-sky-600/25 flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {bookingSubmitting ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Confirming Slot...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Calendar className="w-4 h-4" />
+                      <span>Confirm &amp; Reserve OPD Appointment</span>
+                    </>
+                  )}
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

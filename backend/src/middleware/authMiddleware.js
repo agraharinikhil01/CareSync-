@@ -36,6 +36,24 @@ const protect = async (req, res, next) => {
   }
 };
 
+const optionalAuth = async (req, res, next) => {
+  let token;
+
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    try {
+      token = req.headers.authorization.split(' ')[1];
+      const JWT_SECRET = process.env.JWT_SECRET || 'caresync_super_secret_jwt_key_2026_change_this';
+      const decoded = jwt.verify(token, JWT_SECRET);
+
+      req.user = await User.findById(decoded.userId).select('-password');
+    } catch {
+      req.user = null;
+    }
+  }
+
+  return next();
+};
+
 const { authorize } = require('./roleMiddleware');
 
-module.exports = { protect, authorize };
+module.exports = { protect, optionalAuth, authorize };

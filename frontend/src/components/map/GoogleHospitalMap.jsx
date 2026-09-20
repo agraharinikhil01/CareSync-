@@ -121,7 +121,7 @@ const GoogleHospitalMap = ({
             streetViewControl: false,
             rotateControl: true,
             fullscreenControl: true,
-            gestureHandling: 'greedy',
+            gestureHandling: 'cooperative',
             styles: [
               {
                 featureType: 'poi.medical',

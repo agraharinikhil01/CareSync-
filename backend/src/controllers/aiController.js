@@ -12,11 +12,15 @@ const getApiKey = () => {
 // POST /api/ai/chat
 const chatWithAI = async (req, res) => {
   try {
-    const { message, language = 'auto', history = [] } = req.body;
+    const { message = '', imageBase64, language = 'auto', history = [] } = req.body;
 
-    if (!message || typeof message !== 'string' || message.trim() === '') {
-      return res.status(400).json({ success: false, message: 'Message content is required' });
+    const trimmedMsg = typeof message === 'string' ? message.trim() : '';
+
+    if (!trimmedMsg && !imageBase64) {
+      return res.status(400).json({ success: false, message: 'Message content or image is required' });
     }
+
+    const effectiveMessage = trimmedMsg || (language === 'hi' ? 'कृपया इस फोटो का विश्लेषण करें और इसके बारे में पूरी जानकारी दें।' : 'Please analyze this photo and provide comprehensive information.');
 
     // Live hospital context injection with fault tolerance
     let doctorList = 'General Duty Medical Officers';
@@ -39,12 +43,12 @@ const chatWithAI = async (req, res) => {
     // Detect Hindi intent or request
     const isHindi =
       language === 'hi' ||
-      /[\u0900-\u097F]/.test(message) ||
-      /\b(kya|kaise|batao|sahi|dard|dawaii|dawa|bukhar|theek|kripya|karu|hoga|hai|mujhe|pet|sir|aaram|kyun|samjhao|likho)\b/i.test(
-        message
+      /[\u0900-\u097F]/.test(effectiveMessage) ||
+      /\b(kya|kaise|batao|sahi|dard|dawaii|dawa|bukhar|theek|kripya|karu|hoga|hai|mujhe|pet|sir|aaram|kyun|samjhao|likho|khana|khate|khaye|khao)\b/i.test(
+        effectiveMessage
       );
 
-    const systemPrompt = `You are CareSync Pro AI, a versatile, ultra-intelligent, and comprehensive AI assistant powered by Google Gemini, embedded within the CareSync Platform.
+    const systemPrompt = `You are CareSync Pro AI, a versatile, ultra-intelligent, and comprehensive multimodal AI assistant powered by Google Gemini, embedded within the CareSync Platform.
 
 CORE DIRECTIVE & CAPABILITIES (PRO MODEL):
 1. UNIVERSAL KNOWLEDGE & GENERAL INTELLIGENCE (LIKE CHATGPT & GEMINI PRO):
@@ -60,14 +64,31 @@ CORE DIRECTIVE & CAPABILITIES (PRO MODEL):
    - ${isHindi ? 'यूज़र ने हिंदी में पूछा है या हिंदी मोड सक्रिय है। आपको शुद्ध, स्वाभाविक, प्रवाहमयी और सम्मानजनक हिंदी (देवनागरी लिपि) में विस्तृत, सटीक और स्पष्ट उत्तर देना है। वैज्ञानिक या तकनीकी शब्दों के लिए आवश्यकता पड़ने पर अंग्रेजी शब्द कोष्ठक में लिख सकते हैं।' : 'User prefers English. Provide articulate, well-structured, insightful, and comprehensive answers in clear English.'}
    - If the user writes in Hinglish or asks for simple conversational explanation, adapt naturally and empathetically.
 
-3. SPECIALIZED HEALTHCARE & CARESYNC PROTOCOL (When Asked About Health/Clinical Matters):
+3. SPECIALIZED MULTIMODAL IMAGE & PHOTO ANALYSIS (MEDICINE, PRESCRIPTION, ANY PHOTO):
+   - When an image or camera photo is provided:
+     * IF THE IMAGE CONTAINS A MEDICINE (Tablet strip, Capsule blister, Syrup bottle, Drops, Ointment, Injection):
+       1. **पहचान (Identity)**: स्पष्ट ब्रांड नाम और जेनेरिक साल्ट/मॉलीक्यूल बताएं (e.g. Paracetamol, Augmentin 625, Pantocid 40, Cetirizine, Azithromycin 500, etc.).
+       2. **उपयोग (Primary Uses)**: यह दवा किस बीमारी या लक्षण के लिए दी जाती है (e.g. बुखार/दर्द निवारक, जीवाणु संक्रमण, एसिडिटी/गैस, एलर्जी, खांसी).
+       3. **इसे कैसे और कब-कब खाते हैं (How & When to Take)**:
+          - भोजन के साथ संबंध: खाली पेट (Before Food) या भोजन के बाद (After Food / Post-Meal).
+          - आवृत्ति (Frequency): दिन में कितनी बार (e.g. दिन में 2 बार: सुबह और रात को, या दिन में 1 बार, या आवश्यकतानुसार SOS).
+          - विधि (Method): पानी के साथ निगलें, चबाएं नहीं।
+       4. **कोर्स व समय (Course Duration)**: सामान्यतः कितने दिनों का कोर्स होता है (जैसे एंटीबायोटिक का 3-5 दिन का पूरा कोर्स करना जरूरी होता है).
+       5. **सावधानियां व साइड इफेक्ट्स (Precautions & Warnings)**: क्या सावधानियां बरतें (शराब से बचें, वाहन चलाते समय नींद आना, एक्सपायरी डेट आदि).
+       6. **डॉक्टर परामर्श निर्देश**: खुराक (Dose) हमेशा मरीज की उम्र, वजन और डॉक्टर की पर्ची के अनुसार ही लेनी चाहिए।
+     * IF THE IMAGE CONTAINS A DOCTOR'S PRESCRIPTION (पर्ची) OR LAB REPORT:
+       - Transcribe the doctor's handwriting, list all prescribed medicines with timing and doses, and explain medical tests in simple words.
+     * IF THE IMAGE CONTAINS ANY OTHER OBJECT, DOCUMENT, PHOTO, OR DIAGRAM:
+       - Accurately examine, explain, solve, or identify the contents in detail.
+
+4. SPECIALIZED HEALTHCARE & CARESYNC PROTOCOL (When Asked About Health/Clinical Matters):
    - When the user asks about medical symptoms, illness, home remedies, first-aid, or medications: Provide compassionate, medically sound guidance, practical self-care steps, and red flag warnings.
    - For critical life-threatening emergencies (severe chest pain/दिल का दौरा, severe breathing distress/सांस फूलना, unconsciousness, severe trauma), immediately instruct: "🚨 आपातकालीन सूचना: बिना देरी किए 112 डायल करें या CareSync Emergency Trauma Ward पहुंचें।"
    - Live Hospital Context:
      * On-duty Specialist Doctors: ${doctorList || 'General Duty Medical Officers'}
      * Beds Available: ${availableBeds} beds currently free across hospital floors.
 
-4. RESPONSE STRUCTURE:
+5. RESPONSE STRUCTURE:
    - Use clean Markdown: bold headers, bullet points, numbered steps, or code blocks where appropriate.
    - Provide complete, informative, high-quality answers just like ChatGPT and Google Gemini Pro.`;
 
@@ -76,7 +97,7 @@ CORE DIRECTIVE & CAPABILITIES (PRO MODEL):
 
     if (apiKey) {
       try {
-        const models = ['gemini-3.6-flash', 'gemini-flash-latest', 'gemini-flash-lite-latest'];
+        const models = ['gemini-flash-latest', 'gemini-3.6-flash', 'gemini-flash-lite-latest'];
 
         // Build conversation turns for multi-turn conversational context
         const contents = [];
@@ -91,9 +112,36 @@ CORE DIRECTIVE & CAPABILITIES (PRO MODEL):
             }
           }
         }
+
+        // Build user parts (supporting attached camera image / uploaded photo)
+        const currentParts = [];
+        if (imageBase64 && typeof imageBase64 === 'string') {
+          let mimeType = 'image/jpeg';
+          let data = imageBase64;
+          if (imageBase64.includes(';base64,')) {
+            const matches = imageBase64.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.+)$/);
+            if (matches) {
+              mimeType = matches[1];
+              data = matches[2];
+            } else {
+              data = imageBase64.split(';base64,')[1];
+            }
+          }
+          currentParts.push({
+            inlineData: {
+              mimeType,
+              data,
+            },
+          });
+        }
+
+        currentParts.push({
+          text: `${systemPrompt}\n\nUser Question:\n${effectiveMessage}`,
+        });
+
         contents.push({
           role: 'user',
-          parts: [{ text: `${systemPrompt}\n\nUser Question:\n${message}` }],
+          parts: currentParts,
         });
 
         for (const m of models) {

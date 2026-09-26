@@ -1,6 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import api from '../../services/api';
-import { Bot, X, Send, RotateCcw, Sparkles, ShieldAlert, HeartPulse, User, Languages } from 'lucide-react';
+import {
+  Bot,
+  X,
+  Send,
+  RotateCcw,
+  Sparkles,
+  ShieldAlert,
+  User,
+  Camera,
+  Image as ImageIcon,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const SUGGESTED_PROMPTS_HI = [
@@ -17,6 +27,20 @@ const SUGGESTED_PROMPTS_EN = [
   '🏥 Check hospital beds & specialists',
 ];
 
+const MEDICINE_PROMPTS_HI = [
+  '💊 यह दवा कब और कैसे खानी है?',
+  '🩺 दवा का नाम, उपयोग और सावधानियां बताएं',
+  '📝 इस पर्ची / रिपोर्ट को समझाइए',
+  '🔍 इस फोटो के बारे में पूरी जानकारी दें',
+];
+
+const MEDICINE_PROMPTS_EN = [
+  '💊 How and when should I take this medicine?',
+  '🩺 Identify medicine, uses & precautions',
+  '📝 Explain this prescription / lab report',
+  '🔍 Analyze this photo and explain details',
+];
+
 const AIAssistantModal = ({ isOpen, onClose }) => {
   const [language, setLanguage] = useState('hi'); // 'hi' (Hindi) or 'en' (English)
   const [messages, setMessages] = useState([
@@ -27,7 +51,12 @@ const AIAssistantModal = ({ isOpen, onClose }) => {
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+
   const messagesEndRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -61,21 +90,85 @@ const AIAssistantModal = ({ isOpen, onClose }) => {
     });
   };
 
+  const handleImageFile = (file) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error(language === 'hi' ? 'कृपया केवल फोटो (इमेज फाइल) चुनें' : 'Please select an image file');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error(language === 'hi' ? 'फोटो का आकार 10MB से कम होना चाहिए' : 'Image size must be under 10MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result;
+      setSelectedImage(base64);
+      setImagePreview(base64);
+      toast.success(
+        language === 'hi'
+          ? 'फोटो जुड़ गई! अब अपना सवाल पूछें या नीचे दिया सुझाव चुनें'
+          : 'Photo attached! Ask your question or pick a suggested prompt'
+      );
+    };
+    reader.onerror = () => {
+      toast.error(language === 'hi' ? 'फोटो लोड करने में त्रुटि हुई' : 'Failed to read image file');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleFileInputChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleImageFile(file);
+    }
+  };
+
+  const clearSelectedImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (cameraInputRef.current) cameraInputRef.current.value = '';
+  };
+
   const handleSend = async (textToSend) => {
     const userMessage = (textToSend || input).trim();
-    if (!userMessage || loading) return;
+    const currentImage = selectedImage;
+
+    if ((!userMessage && !currentImage) || loading) return;
 
     setInput('');
-    const newMessages = [...messages, { role: 'user', text: userMessage }];
+    clearSelectedImage();
+
+    const effectivePrompt =
+      userMessage ||
+      (language === 'hi'
+        ? 'कृपया इस दवा/फोटो का विश्लेषण करें और इसके बारे में पूरी जानकारी दें (कब और कैसे खाना है, उपयोग, सावधानियां)।'
+        : 'Please analyze this medicine/photo in detail (how and when to take, indications, precautions).');
+
+    const displayText =
+      userMessage ||
+      (language === 'hi' ? 'दवा / फोटो की जानकारी' : 'Photo analysis request');
+
+    const newMessages = [
+      ...messages,
+      {
+        role: 'user',
+        text: displayText,
+        image: currentImage,
+      },
+    ];
     setMessages(newMessages);
     setLoading(true);
 
     try {
       // Pass recent conversation history for multi-turn conversational context
       const res = await api.post('/ai/chat', {
-        message: userMessage,
+        message: effectivePrompt,
+        imageBase64: currentImage || undefined,
         language,
-        history: newMessages.slice(-6),
+        history: newMessages.slice(-6).map((m) => ({ role: m.role, text: m.text })),
       });
 
       if (res.data?.success && res.data?.data?.reply) {
@@ -86,8 +179,8 @@ const AIAssistantModal = ({ isOpen, onClose }) => {
     } catch {
       const fallbackText =
         language === 'hi'
-          ? 'नमस्ते। CareSync Pro AI से संपर्क में क्षणिक विलंब हो रहा है। सामान्य ज्ञान या स्वास्थ्य से जुड़े किसी भी प्रश्न के लिए कृपया एक बार पुनः सबमिट करें। यदि आपातकालीन स्थिति है तो तुरंत 112 डायल करें।'
-          : 'CareSync Pro AI is momentarily busy. Please try sending your query again. For life-threatening emergencies, immediately dial 112.';
+          ? 'नमस्ते। CareSync Pro AI से संपर्क में क्षणिक विलंब हो रहा है। कृपया एक बार पुनः फोटो या प्रश्न सबमिट करें। यदि आपातकालीन स्थिति है तो तुरंत 112 डायल करें।'
+          : 'CareSync Pro AI is momentarily busy. Please try sending your query or photo again. For life-threatening emergencies, immediately dial 112.';
 
       setMessages((prev) => [
         ...prev,
@@ -109,16 +202,18 @@ const AIAssistantModal = ({ isOpen, onClose }) => {
         text: greeting,
       },
     ]);
+    clearSelectedImage();
     toast.success(language === 'hi' ? 'बातचीत रीसेट हो गई' : 'Conversation cleared');
   };
 
   if (!isOpen) return null;
 
   const currentPrompts = language === 'hi' ? SUGGESTED_PROMPTS_HI : SUGGESTED_PROMPTS_EN;
+  const currentMedicinePrompts = language === 'hi' ? MEDICINE_PROMPTS_HI : MEDICINE_PROMPTS_EN;
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[9999] flex items-center justify-center p-3 sm:p-4">
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xl w-full max-w-lg flex flex-col h-[600px] overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xl w-full max-w-lg flex flex-col h-[620px] overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
         <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-sky-950 text-white p-4 flex items-center justify-between shadow-xs">
           <div className="flex items-center gap-3">
@@ -129,13 +224,13 @@ const AIAssistantModal = ({ isOpen, onClose }) => {
               <h3 className="font-bold text-sm tracking-tight flex items-center gap-2">
                 CareSync Pro AI
                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30">
-                  Gemini Pro AI
+                  Gemini Pro Vision
                 </span>
               </h3>
               <p className="text-[11px] text-slate-300">
                 {language === 'hi'
-                  ? 'सर्वज्ञानी AI — सामान्य ज्ञान, विज्ञान, तकनीक व स्वास्थ्य'
-                  : 'Omni-Intelligent AI — Science, Tech, Knowledge & Health'}
+                  ? 'सर्वज्ञानी AI — दवा/फोटो पहचान, उपयोग व कब-कैसे खाना है'
+                  : 'Omni-Intelligent AI — Medicine & Photo Vision Analysis'}
               </p>
             </div>
           </div>
@@ -189,13 +284,17 @@ const AIAssistantModal = ({ isOpen, onClose }) => {
         {/* Suggested Quick Prompt Chips */}
         <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1">
-            {language === 'hi' ? 'सुझाव:' : 'Try:'}
+            {selectedImage ? (language === 'hi' ? 'दवा सवाल:' : 'Photo Prompts:') : (language === 'hi' ? 'सुझाव:' : 'Try:')}
           </span>
-          {currentPrompts.map((prompt, idx) => (
+          {(selectedImage ? currentMedicinePrompts : currentPrompts).map((prompt, idx) => (
             <button
               key={idx}
               onClick={() => handleSend(prompt)}
-              className="text-[11px] text-slate-600 bg-white hover:bg-sky-50 hover:text-sky-700 hover:border-sky-200 border border-slate-200 px-2.5 py-1 rounded-full whitespace-nowrap transition-colors cursor-pointer shadow-2xs"
+              className={`text-[11px] px-2.5 py-1 rounded-full whitespace-nowrap transition-colors cursor-pointer shadow-2xs border ${
+                selectedImage
+                  ? 'bg-sky-50 text-sky-800 border-sky-300 hover:bg-sky-100 font-medium'
+                  : 'text-slate-600 bg-white hover:bg-sky-50 hover:text-sky-700 hover:border-sky-200 border-slate-200'
+              }`}
             >
               {prompt}
             </button>
@@ -226,6 +325,16 @@ const AIAssistantModal = ({ isOpen, onClose }) => {
                       : 'bg-white text-slate-800 border border-slate-200/80 rounded-tl-xs'
                   }`}
                 >
+                  {/* Attached photo in message bubble if present */}
+                  {m.image && (
+                    <div className="mb-2.5 rounded-xl overflow-hidden border border-white/20 shadow-sm max-w-[240px]">
+                      <img
+                        src={m.image}
+                        alt="User upload"
+                        className="w-full h-auto max-h-48 object-cover rounded-lg"
+                      />
+                    </div>
+                  )}
                   <p className="whitespace-pre-wrap">{m.text}</p>
                 </div>
               </div>
@@ -250,7 +359,13 @@ const AIAssistantModal = ({ isOpen, onClose }) => {
                   ></span>
                 </div>
                 <span>
-                  {language === 'hi' ? 'CareSync AI उत्तर तैयार कर रहा है...' : 'CareSync AI is thinking...'}
+                  {language === 'hi'
+                    ? selectedImage
+                      ? 'दवा व फोटो का विश्लेषण किया जा रहा है...'
+                      : 'CareSync AI उत्तर तैयार कर रहा है...'
+                    : selectedImage
+                      ? 'Analyzing medicine & photo details...'
+                      : 'CareSync AI is thinking...'}
                 </span>
               </div>
             </div>
@@ -258,6 +373,36 @@ const AIAssistantModal = ({ isOpen, onClose }) => {
 
           <div ref={messagesEndRef} />
         </div>
+
+        {/* Selected Image Thumbnail Preview Bar (Before Sending) */}
+        {imagePreview && (
+          <div className="px-3.5 py-2 bg-sky-50/95 border-t border-sky-100 flex items-center justify-between gap-3 animate-in fade-in duration-150">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="relative w-11 h-11 rounded-lg overflow-hidden border border-sky-300 shadow-2xs bg-slate-900 shrink-0">
+                <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+              </div>
+              <div className="text-left min-w-0">
+                <p className="text-xs font-semibold text-sky-950 truncate flex items-center gap-1.5">
+                  <Camera className="w-3.5 h-3.5 text-sky-600 shrink-0" />
+                  {language === 'hi' ? 'फोटो संलग्न (दवा / पर्ची / अन्य)' : 'Photo Attached'}
+                </p>
+                <p className="text-[10px] text-sky-700 truncate">
+                  {language === 'hi'
+                    ? 'भेजने के लिए सेंड दबाएं या ऊपर का सुझाव चुनें'
+                    : 'Click send or select a prompt chip above'}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={clearSelectedImage}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer shrink-0"
+              title={language === 'hi' ? 'फोटो हटाएं' : 'Remove photo'}
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
 
         {/* Emergency Disclaimer Banner */}
         <div className="bg-amber-50/90 px-3.5 py-1.5 border-t border-amber-200/60 text-[10px] text-amber-800 flex items-center justify-center gap-1.5">
@@ -275,29 +420,72 @@ const AIAssistantModal = ({ isOpen, onClose }) => {
           </span>
         </div>
 
-        {/* Chat Input */}
+        {/* Hidden File Inputs for Gallery and Native Camera */}
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={handleFileInputChange}
+          className="hidden"
+        />
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleFileInputChange}
+          className="hidden"
+        />
+
+        {/* Chat Input Bar */}
         <form
           onSubmit={(e) => {
             e.preventDefault();
             handleSend();
           }}
-          className="p-3 border-t border-slate-200/80 bg-white flex items-center gap-2"
+          className="p-3 border-t border-slate-200/80 bg-white flex items-center gap-1.5 sm:gap-2"
         >
+          {/* Camera Capture Button */}
+          <button
+            type="button"
+            onClick={() => cameraInputRef.current?.click()}
+            className="p-2 text-slate-500 hover:text-sky-600 hover:bg-sky-50 rounded-xl transition-colors cursor-pointer shrink-0"
+            title={language === 'hi' ? 'कैमरे से फोटो खींचें' : 'Take a photo with camera'}
+          >
+            <Camera className="w-4 h-4" />
+          </button>
+
+          {/* Upload Image Button */}
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="p-2 text-slate-500 hover:text-sky-600 hover:bg-sky-50 rounded-xl transition-colors cursor-pointer shrink-0"
+            title={language === 'hi' ? 'दवा / पर्ची की फोटो अपलोड करें' : 'Upload photo / medicine image'}
+          >
+            <ImageIcon className="w-4 h-4" />
+          </button>
+
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={
-              language === 'hi'
-                ? 'कोई भी सवाल पूछें — विज्ञान, तकनीक, गणित, सामान्य ज्ञान या स्वास्थ्य...'
-                : 'Ask anything — science, technology, math, general knowledge, or health...'
+              selectedImage
+                ? language === 'hi'
+                  ? 'दवा के बारे में पूछें (जैसे: कब और कैसे खाना है?)'
+                  : 'Ask about this photo / medicine (e.g. how and when to take?)'
+                : language === 'hi'
+                  ? 'कोई भी सवाल पूछें — दवा, विज्ञान, तकनीक या सामान्य ज्ञान...'
+                  : 'Ask anything — medicine, science, technology or general knowledge...'
             }
-            className="flex-1 border border-slate-200 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/15 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 outline-none transition-all placeholder:text-slate-400"
+            className="flex-1 border border-slate-200 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/15 rounded-xl px-3 py-2 text-xs text-slate-900 outline-none transition-all placeholder:text-slate-400"
           />
+
           <button
             type="submit"
-            disabled={loading || !input.trim()}
+            disabled={loading || (!input.trim() && !selectedImage)}
             className="bg-sky-600 hover:bg-sky-700 disabled:opacity-40 text-white p-2.5 rounded-xl text-xs font-semibold flex items-center justify-center cursor-pointer transition-all shadow-sm shadow-sky-600/20 shrink-0"
+            title={language === 'hi' ? 'भेजें' : 'Send'}
           >
             <Send className="w-4 h-4" />
           </button>

@@ -97,24 +97,17 @@ CORE DIRECTIVE & CAPABILITIES (PRO MODEL):
 
     if (apiKey) {
       try {
-        const models = ['gemini-flash-latest', 'gemini-3.6-flash', 'gemini-flash-lite-latest'];
+        const models = [
+          'gemini-3.8-flash',
+          'gemini-3.6-flash',
+          'gemini-flash-lite-latest',
+          'gemini-3.7-flash',
+          'gemini-flash-latest',
+        ];
 
-        // Build conversation turns for multi-turn conversational context
-        const contents = [];
-        if (Array.isArray(history) && history.length > 0) {
-          const recent = history.slice(-6);
-          for (const h of recent) {
-            if (h.text && (h.role === 'user' || h.role === 'ai' || h.role === 'model')) {
-              contents.push({
-                role: h.role === 'ai' ? 'model' : 'user',
-                parts: [{ text: h.text }],
-              });
-            }
-          }
-        }
+        let contents = [];
 
-        // Build user parts (supporting attached camera image / uploaded photo)
-        const currentParts = [];
+        // Build multimodal payload or sanitized multi-turn text conversation
         if (imageBase64 && typeof imageBase64 === 'string') {
           let mimeType = 'image/jpeg';
           let data = imageBase64;
@@ -127,22 +120,45 @@ CORE DIRECTIVE & CAPABILITIES (PRO MODEL):
               data = imageBase64.split(';base64,')[1];
             }
           }
-          currentParts.push({
-            inlineData: {
-              mimeType,
-              data,
+          contents = [
+            {
+              role: 'user',
+              parts: [
+                {
+                  inlineData: {
+                    mimeType,
+                    data,
+                  },
+                },
+                {
+                  text: `${systemPrompt}\n\nUser Question:\n${effectiveMessage}`,
+                },
+              ],
             },
+          ];
+        } else {
+          const turns = [];
+          if (Array.isArray(history) && history.length > 0) {
+            let lastRole = null;
+            for (const h of history.slice(-6)) {
+              if (!h.text) continue;
+              const role = h.role === 'ai' || h.role === 'model' ? 'model' : 'user';
+              if (turns.length === 0 && role === 'model') continue;
+              if (role !== lastRole) {
+                turns.push({ role, parts: [{ text: h.text }] });
+                lastRole = role;
+              }
+            }
+            if (turns.length > 0 && turns[turns.length - 1].role === 'user') {
+              turns.pop();
+            }
+          }
+          turns.push({
+            role: 'user',
+            parts: [{ text: `${systemPrompt}\n\nUser Question:\n${effectiveMessage}` }],
           });
+          contents = turns;
         }
-
-        currentParts.push({
-          text: `${systemPrompt}\n\nUser Question:\n${effectiveMessage}`,
-        });
-
-        contents.push({
-          role: 'user',
-          parts: currentParts,
-        });
 
         for (const m of models) {
           try {
@@ -153,7 +169,7 @@ CORE DIRECTIVE & CAPABILITIES (PRO MODEL):
               body: JSON.stringify({
                 contents,
                 generationConfig: {
-                  temperature: 0.35,
+                  temperature: 0.3,
                   maxOutputTokens: 2048,
                 },
               }),
@@ -174,10 +190,29 @@ CORE DIRECTIVE & CAPABILITIES (PRO MODEL):
       }
     }
 
-    // Intelligent Fallback (handles both medical and general queries)
+    // Intelligent Fallback (handles vision, medical, and general queries)
     if (!reply) {
-      const lower = message.toLowerCase();
-      const isMedicalQuery =
+      if (imageBase64) {
+        if (isHindi) {
+          reply = `🩺 **दवा / फोटो विश्लेषण (CareSync Health Advisory)**:
+1. **दवा का नाम व साल्ट**: पत्ते के पीछे दी गई एक्सपायरी डेट (Exp Date) व साल्ट जांचें।
+2. **खाली पेट बनाम भोजन के बाद**:
+   - **एसिडिटी/गैस की दवाएं (Pantoprazole, Omeprazole)**: सुबह नाश्ते से 30 मिनट पहले खाली पेट पानी से लें।
+   - **दर्द निवारक व एंटीबायोटिक (Paracetamol, Amoxicillin)**: हमेशा भोजन या नाश्ते के बाद लें।
+3. **सेवन विधि**: एक पूरे गिलास पानी के साथ निगलें, चबाएं या तोड़ें नहीं।
+4. **डॉक्टर परामर्श**: खुराक (Dose) के लिए CareSync पोर्टल से संबंधित डॉक्टर का परामर्श अवश्य लें।`;
+        } else {
+          reply = `🩺 **Medicine / Image Clinical Advisory (CareSync Assistant)**:
+1. **Verify Expiry & Salt**: Check the active generic molecule and expiry date on the packaging.
+2. **Timing with Food**:
+   - **Antacids / PPIs**: Take 30 minutes before breakfast on an empty stomach.
+   - **Antibiotics / Painkillers**: Take after meals to avoid stomach irritation.
+3. **Administration**: Swallow whole with a full glass of water without chewing.
+4. **Physician Guidance**: Consult a CareSync specialist to determine exact dosage for your condition.`;
+        }
+      } else {
+        const lower = effectiveMessage.toLowerCase();
+        const isMedicalQuery =
         lower.includes('chest') ||
         lower.includes('pain') ||
         lower.includes('doctor') ||

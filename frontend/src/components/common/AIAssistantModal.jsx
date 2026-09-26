@@ -4,17 +4,17 @@ import { Bot, X, Send, RotateCcw, Sparkles, ShieldAlert, HeartPulse, User, Langu
 import toast from 'react-hot-toast';
 
 const SUGGESTED_PROMPTS_HI = [
-  'तबीयत खराब है, क्या करूँ?',
-  'अपॉइंटमेंट कैसे बुक करें?',
-  'अस्पताल में उपलब्ध बेड देखें',
-  'डॉक्टर का समय और परामर्श फीस',
+  '🌍 सामान्य ज्ञान या कोई भी सवाल पूछें',
+  '🔬 विज्ञान / तकनीक से जुड़े सवाल',
+  '🩺 तबीयत खराब है, क्या करूँ?',
+  '🏥 अस्पताल में उपलब्ध बेड व डॉक्टर',
 ];
 
 const SUGGESTED_PROMPTS_EN = [
-  'What should I do if unwell?',
-  'How do I book an appointment?',
-  'Show available hospital beds',
-  'Doctor consultation hours & fees',
+  '🌍 Ask anything (Science, Tech, General)',
+  '💡 Explain complex concepts simply',
+  '🩺 Health symptoms & medical guidance',
+  '🏥 Check hospital beds & specialists',
 ];
 
 const AIAssistantModal = ({ isOpen, onClose }) => {
@@ -22,7 +22,7 @@ const AIAssistantModal = ({ isOpen, onClose }) => {
   const [messages, setMessages] = useState([
     {
       role: 'ai',
-      text: 'नमस्ते! 🙏 मैं आपका CareSync हेल्थकेयर AI असिस्टेंट हूँ।\n\nआप मुझसे स्वास्थ्य सलाह, "तबीयत ठीक करने के उपाय", डॉक्टर अपॉइंटमेंट, या अस्पताल में बेड उपलब्धता के बारे में पूछ सकते हैं।',
+      text: 'नमस्ते! 🙏 मैं आपका CareSync Pro AI असिस्टेंट हूँ (Powered by Google Gemini)।\n\nआप मुझसे कोई भी सवाल पूछ सकते हैं — विज्ञान, तकनीक, सामान्य ज्ञान, गणित, कोडिंग, या स्वास्थ्य और अस्पताल सेवाओं से जुड़ी कोई भी जानकारी!',
     },
   ]);
   const [input, setInput] = useState('');
@@ -47,7 +47,7 @@ const AIAssistantModal = ({ isOpen, onClose }) => {
         ...prev,
         {
           role: 'ai',
-          text: '🇮🇳 हिंदी भाषा मोड सक्रिय हो गया है। अब आप हिंदी में कोई भी प्रश्न या समस्या पूछ सकते हैं।',
+          text: '🇮🇳 हिंदी भाषा मोड सक्रिय है। अब आप हिंदी में कोई भी सामान्य ज्ञान, विज्ञान, तकनीक या स्वास्थ्य संबंधी प्रश्न पूछ सकते हैं।',
         },
       ]);
     } else {
@@ -55,7 +55,7 @@ const AIAssistantModal = ({ isOpen, onClose }) => {
         ...prev,
         {
           role: 'ai',
-          text: '🌐 English language mode enabled. How can I assist your health and clinical needs today?',
+          text: '🌐 English mode enabled. Ask me anything across general knowledge, science, coding, or clinical questions!',
         },
       ]);
     }
@@ -66,11 +66,18 @@ const AIAssistantModal = ({ isOpen, onClose }) => {
     if (!userMessage || loading) return;
 
     setInput('');
-    setMessages((prev) => [...prev, { role: 'user', text: userMessage }]);
+    const newMessages = [...messages, { role: 'user', text: userMessage }];
+    setMessages(newMessages);
     setLoading(true);
 
     try {
-      const res = await api.post('/ai/chat', { message: userMessage, language });
+      // Pass recent conversation history for multi-turn conversational context
+      const res = await api.post('/ai/chat', {
+        message: userMessage,
+        language,
+        history: newMessages.slice(-6),
+      });
+
       if (res.data?.success && res.data?.data?.reply) {
         setMessages((prev) => [...prev, { role: 'ai', text: res.data.data.reply }]);
       } else {
@@ -79,8 +86,8 @@ const AIAssistantModal = ({ isOpen, onClose }) => {
     } catch {
       const fallbackText =
         language === 'hi'
-          ? 'नमस्ते। यदि आपकी तबीयत ठीक नहीं लग रही है, तो कृपया पर्याप्त आराम करें और गुनगुना पानी पिएं। यदि बुखार, तेज दर्द या सांस लेने में परेशानी है तो कृपया बिना देरी किए तुरंत CareSync इमरजेंसी सेंटर पहुंचें या 112 पर कॉल करें। आप हमारे ओपीडी डॉक्टर से परामर्श भी बुक कर सकते हैं।'
-          : 'CareSync Assistant is momentarily busy. For urgent clinical triage or bed verification, please dial emergency 112 or contact the reception.';
+          ? 'नमस्ते। CareSync Pro AI से संपर्क में क्षणिक विलंब हो रहा है। सामान्य ज्ञान या स्वास्थ्य से जुड़े किसी भी प्रश्न के लिए कृपया एक बार पुनः सबमिट करें। यदि आपातकालीन स्थिति है तो तुरंत 112 डायल करें।'
+          : 'CareSync Pro AI is momentarily busy. Please try sending your query again. For life-threatening emergencies, immediately dial 112.';
 
       setMessages((prev) => [
         ...prev,
@@ -100,8 +107,8 @@ const AIAssistantModal = ({ isOpen, onClose }) => {
         role: 'ai',
         text:
           language === 'hi'
-            ? 'बातचीत रीसेट हो गई है। आप अपनी समस्या या प्रश्न पूछ सकते हैं।'
-            : 'Conversation reset. How can I assist your health and clinical needs today?',
+            ? 'बातचीत रीसेट हो गई है। आप सामान्य ज्ञान, विज्ञान, तकनीक या स्वास्थ्य से जुड़ा कोई भी सवाल पूछ सकते हैं।'
+            : 'Conversation reset. Ask me anything about science, general knowledge, technology, or health!',
       },
     ]);
     toast.success(language === 'hi' ? 'बातचीत रीसेट हो गई' : 'Conversation cleared');
@@ -122,13 +129,15 @@ const AIAssistantModal = ({ isOpen, onClose }) => {
             </div>
             <div>
               <h3 className="font-bold text-sm tracking-tight flex items-center gap-2">
-                CareSync Assistant
+                CareSync Pro AI
                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30">
-                  Gemini AI
+                  Gemini Pro AI
                 </span>
               </h3>
               <p className="text-[11px] text-slate-300">
-                {language === 'hi' ? 'स्वास्थ्य एवं चिकित्सा सहायक' : 'Your healthcare companion'}
+                {language === 'hi'
+                  ? 'सर्वज्ञानी AI — सामान्य ज्ञान, विज्ञान, तकनीक व स्वास्थ्य'
+                  : 'Omni-Intelligent AI — Science, Tech, Knowledge & Health'}
               </p>
             </div>
           </div>
@@ -282,8 +291,8 @@ const AIAssistantModal = ({ isOpen, onClose }) => {
             onChange={(e) => setInput(e.target.value)}
             placeholder={
               language === 'hi'
-                ? 'स्वास्थ्य, लक्षण ("क्या करूँ कि सही हो जाए"), बेड या अपॉइंटमेंट के बारे में पूछें...'
-                : 'Ask about symptoms, doctor schedules, bed vacancies, or appointments...'
+                ? 'कोई भी सवाल पूछें — विज्ञान, तकनीक, गणित, सामान्य ज्ञान या स्वास्थ्य...'
+                : 'Ask anything — science, technology, math, general knowledge, or health...'
             }
             className="flex-1 border border-slate-200 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/15 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 outline-none transition-all placeholder:text-slate-400"
           />

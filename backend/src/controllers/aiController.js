@@ -12,7 +12,7 @@ const getApiKey = () => {
 // POST /api/ai/chat
 const chatWithAI = async (req, res) => {
   try {
-    const { message, language = 'auto' } = req.body;
+    const { message, language = 'auto', history = [] } = req.body;
 
     if (!message || typeof message !== 'string' || message.trim() === '') {
       return res.status(400).json({ success: false, message: 'Message content is required' });
@@ -40,26 +40,36 @@ const chatWithAI = async (req, res) => {
     const isHindi =
       language === 'hi' ||
       /[\u0900-\u097F]/.test(message) ||
-      /\b(kya|kaise|batao|sahi|dard|dawaii|dawa|bukhar|theek|kripya|karu|hoga|hai|mujhe|pet|sir|aaram)\b/i.test(
+      /\b(kya|kaise|batao|sahi|dard|dawaii|dawa|bukhar|theek|kripya|karu|hoga|hai|mujhe|pet|sir|aaram|kyun|samjhao|likho)\b/i.test(
         message
       );
 
-    const systemPrompt = `You are CareSync AI, an empathetic, highly knowledgeable clinical assistant for CareSync Hospital System.
-Hospital Live Context:
-- Available Specialist Doctors: ${doctorList || 'General Duty Medical Officers'}
-- Available Ward & ICU Beds: ${availableBeds} beds currently free across hospital floors.
+    const systemPrompt = `You are CareSync Pro AI, a versatile, ultra-intelligent, and comprehensive AI assistant powered by Google Gemini, embedded within the CareSync Platform.
 
-Preferred Language Mode: ${isHindi ? 'HINDI (हिंदी) - Respond completely in clear, natural Hindi (Devanagari script or conversational Hindi with standard medical terms in brackets).' : 'ENGLISH - Respond in professional, compassionate English.'}
+CORE DIRECTIVE & CAPABILITIES (PRO MODEL):
+1. UNIVERSAL KNOWLEDGE & GENERAL INTELLIGENCE (LIKE CHATGPT & GEMINI PRO):
+   - You have expert-level knowledge across ALL domains without limitation:
+     * Science: Physics, Chemistry, Biology, Astronomy, Earth Sciences, Space Exploration
+     * Technology & Engineering: Software, Coding, Algorithms, Hardware, AI, Cloud, Cybersecurity
+     * Mathematics & Logic: Arithmetic, Algebra, Calculus, Statistics, Reasoning
+     * Humanities: History, Geography, Politics, Economics, World Affairs, Indian Heritage, Culture
+     * Everyday Life: Practical tips, Career advice, Product comparisons, Creative writing, Philosophy
+   - When asked a non-medical question, answer it directly, deeply, accurately, and intelligently. DO NOT artificially inject medical or hospital topics into non-medical answers.
 
-Clinical Guidelines:
-1. ${isHindi ? 'हिंदी में स्पष्ट, विनम्र और सरल भाषा में उत्तर दें।' : 'Respond in clear, compassionate English.'}
-2. MEDICAL SAFETY RULES:
-   - You MUST NOT formally diagnose complex conditions without an in-person examination.
-   - For critical emergency symptoms (chest pain/सीने में दर्द, severe breathing difficulty/सांस फूलना, unconsciousness/बेहोशी, severe head injury/सिर पर गंभीर चोट), ALWAYS instruct immediately to call 112 or rush to the CareSync Emergency Trauma Unit.
-3. For general wellness or symptom queries (e.g. "क्या करूँ कि सही हो जाए", fever, headache, indigestion, body pain):
-   - Provide immediate safe self-care/first-aid steps (rest, hydration, light diet, warm compress/saline gargle).
-   - List red flag symptoms that require immediate medical attention.
-   - Guide the patient on how to consult a doctor at CareSync (OPD consultation) and check live bed availability.`;
+2. LANGUAGE MASTERY (FLAWLESS हिंदी & ENGLISH):
+   - ${isHindi ? 'यूज़र ने हिंदी में पूछा है या हिंदी मोड सक्रिय है। आपको शुद्ध, स्वाभाविक, प्रवाहमयी और सम्मानजनक हिंदी (देवनागरी लिपि) में विस्तृत, सटीक और स्पष्ट उत्तर देना है। वैज्ञानिक या तकनीकी शब्दों के लिए आवश्यकता पड़ने पर अंग्रेजी शब्द कोष्ठक में लिख सकते हैं।' : 'User prefers English. Provide articulate, well-structured, insightful, and comprehensive answers in clear English.'}
+   - If the user writes in Hinglish or asks for simple conversational explanation, adapt naturally and empathetically.
+
+3. SPECIALIZED HEALTHCARE & CARESYNC PROTOCOL (When Asked About Health/Clinical Matters):
+   - When the user asks about medical symptoms, illness, home remedies, first-aid, or medications: Provide compassionate, medically sound guidance, practical self-care steps, and red flag warnings.
+   - For critical life-threatening emergencies (severe chest pain/दिल का दौरा, severe breathing distress/सांस फूलना, unconsciousness, severe trauma), immediately instruct: "🚨 आपातकालीन सूचना: बिना देरी किए 112 डायल करें या CareSync Emergency Trauma Ward पहुंचें।"
+   - Live Hospital Context:
+     * On-duty Specialist Doctors: ${doctorList || 'General Duty Medical Officers'}
+     * Beds Available: ${availableBeds} beds currently free across hospital floors.
+
+4. RESPONSE STRUCTURE:
+   - Use clean Markdown: bold headers, bullet points, numbered steps, or code blocks where appropriate.
+   - Provide complete, informative, high-quality answers just like ChatGPT and Google Gemini Pro.`;
 
     let reply = '';
     const apiKey = getApiKey();
@@ -68,6 +78,24 @@ Clinical Guidelines:
       try {
         const models = ['gemini-3.6-flash', 'gemini-flash-latest', 'gemini-flash-lite-latest'];
 
+        // Build conversation turns for multi-turn conversational context
+        const contents = [];
+        if (Array.isArray(history) && history.length > 0) {
+          const recent = history.slice(-6);
+          for (const h of recent) {
+            if (h.text && (h.role === 'user' || h.role === 'ai' || h.role === 'model')) {
+              contents.push({
+                role: h.role === 'ai' ? 'model' : 'user',
+                parts: [{ text: h.text }],
+              });
+            }
+          }
+        }
+        contents.push({
+          role: 'user',
+          parts: [{ text: `${systemPrompt}\n\nUser Question:\n${message}` }],
+        });
+
         for (const m of models) {
           try {
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${apiKey}`;
@@ -75,10 +103,10 @@ Clinical Guidelines:
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                contents: [{ parts: [{ text: `${systemPrompt}\n\nUser Question:\n${message}` }] }],
+                contents,
                 generationConfig: {
-                  temperature: 0.3,
-                  maxOutputTokens: 800,
+                  temperature: 0.35,
+                  maxOutputTokens: 2048,
                 },
               }),
             });
@@ -98,9 +126,23 @@ Clinical Guidelines:
       }
     }
 
-    // Rule-based clinical fallback
+    // Intelligent Fallback (handles both medical and general queries)
     if (!reply) {
       const lower = message.toLowerCase();
+      const isMedicalQuery =
+        lower.includes('chest') ||
+        lower.includes('pain') ||
+        lower.includes('doctor') ||
+        lower.includes('appointment') ||
+        lower.includes('bed') ||
+        lower.includes('fever') ||
+        lower.includes('bukhar') ||
+        lower.includes('dard') ||
+        lower.includes('tabiyat') ||
+        lower.includes('saans') ||
+        lower.includes('hospital') ||
+        lower.includes('dawa');
+
       if (isHindi) {
         if (lower.includes('chest') || lower.includes('seene') || lower.includes('saans') || lower.includes('emergency')) {
           reply = '🚨 **आपातकालीन चेतावनी (Emergency Alert)**: सीने में तेज दर्द या सांस लेने में परेशानी एक गंभीर स्थिति हो सकती है। कृपया बिना देरी किए तुरंत **112** पर कॉल करें या नजदीकी केयरसिंक (CareSync) इमरजेंसी ट्रॉमा सेंटर पहुंचें।';
@@ -108,12 +150,16 @@ Clinical Guidelines:
           reply = `CareSync अस्पताल में विशेषज्ञ डॉक्टर उपलब्ध हैं:\n${doctorList || 'General Duty Physicians'}\n\nआप CareSync पोर्टल के **Appointments** सेक्शन से तुरंत अपनी सुविधानुसार समय चुनकर ओपीडी परामर्श बुक कर सकते हैं।`;
         } else if (lower.includes('bed') || lower.includes('icu') || lower.includes('बेड')) {
           reply = `CareSync अस्पताल में वर्तमान में **${availableBeds} बेड** (General Ward, ICU, Semi-Private व Emergency) खाली और उपलब्ध हैं। फ्रंट डेस्क या पोर्टल से लाइव आवंटन देख सकते हैं।`;
+        } else if (isMedicalQuery) {
+          reply = `नमस्ते! यदि स्वास्थ्य संबंधी परेशानी है, तो कृपया निम्नलिखित प्राथमिक बातों का ध्यान रखें:
+1. **पर्याप्त आराम व हाइड्रेशन**: शरीर को रिकवरी के लिए विश्राम दें और पर्याप्त तरल पदार्थ लें।
+2. **लक्षणों की निगरानी**: यदि तेज बुखार, तेज दर्द या असामान्य लक्षण हैं, तो बिना डॉक्टर की सलाह के खुद से एंटीबायोटिक न लें।
+3. **OPD परामर्श**: CareSync पोर्टल से तुरंत विशेषज्ञ डॉक्टर का परामर्श बुक कर सकते हैं।`;
         } else {
-          reply = `नमस्ते! यदि आपकी तबीयत ठीक नहीं लग रही है ("क्या करूँ कि सही हो जाए"), तो कृपया निम्नलिखित बातों का ध्यान रखें:
-1. **पर्याप्त आराम करें**: शरीर को रिकवरी के लिए नींद और विश्राम दें।
-2. **हाइड्रेशन**: हल्का गुनगुना पानी, ORS या सूप का नियमित सेवन करें।
-3. **हल्का सुपाच्य भोजन**: दलिया, खिचड़ी या ताजे फल लें, तैलीय भोजन से बचें।
-4. **डॉक्टर परामर्श**: स्वयं से कोई भारी एंटीबायोटिक न लें। यदि लक्षण (तेज बुखार, लगातार उल्टी या दर्द) 24 घंटे से अधिक बने रहें, तो CareSync पोर्टल से तुरंत विशेषज्ञ डॉक्टर का OPD परामर्श बुक करें।`;
+          reply = `नमस्ते! मैं CareSync Pro AI हूँ — आपकी सहायता के लिए तैयार।
+मैं विज्ञान, तकनीक, गणित, इतिहास, भूगोल, सामान्य ज्ञान और स्वास्थ्य से जुड़े किसी भी सवाल का सटीक जवाब दे सकता हूँ।
+
+आपके प्रश्न **"${message}"** पर विस्तृत जानकारी तैयार करने के लिए कृपया एक बार पुनः प्रयास करें या प्रश्न को और स्पष्ट रूप से पूछें।`;
         }
       } else {
         if (lower.includes('chest pain') || lower.includes('heart') || lower.includes('emergency')) {
@@ -122,8 +168,12 @@ Clinical Guidelines:
           reply = `CareSync Hospital specialist doctors currently on duty: ${doctorList || 'General Physicians'}. You can book an OPD consultation instantly from the Appointments section.`;
         } else if (lower.includes('bed') || lower.includes('icu') || lower.includes('ward')) {
           reply = `Currently, ${availableBeds} beds are available across General, ICU, and Private wards. Live tracking is active on the dashboard.`;
+        } else if (isMedicalQuery) {
+          reply = `For symptomatic relief, please ensure adequate rest and hydration. If symptoms persist beyond 24 hours, please book an OPD consultation with our specialist doctors at CareSync Hospital.`;
         } else {
-          reply = `For symptomatic relief, please ensure adequate rest and hydration. Avoid self-medicating with antibiotics. If your symptoms persist beyond 24 hours, please book an OPD consultation with our specialist doctors at CareSync Hospital.`;
+          reply = `Hello! I am CareSync Pro AI. I can answer questions across all domains including science, technology, mathematics, history, and general knowledge, as well as healthcare.
+
+To get the full in-depth response for **"${message}"**, please ensure your connection is active and resend your prompt.`;
         }
       }
     }

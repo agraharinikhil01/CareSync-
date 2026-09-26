@@ -121,9 +121,6 @@ const LandingPage = () => {
 
           {/* Desktop Navigation Links */}
           <nav className="hidden lg:flex items-center gap-7 text-sm font-semibold text-slate-600">
-            <a href="#how-it-works" className="hover:text-sky-600 transition-colors">How It Works</a>
-            <a href="#live-network" className="hover:text-sky-600 transition-colors">Live Network</a>
-            <a href="#emergency" className="hover:text-sky-600 transition-colors">Emergency Mode</a>
             <Link to="/register-hospital" className="hover:text-sky-600 transition-colors">For Hospitals</Link>
             <Link to="/explore" className="hover:text-sky-600 transition-colors">Find Hospitals</Link>
             <Link
@@ -218,27 +215,6 @@ const LandingPage = () => {
         {mobileMenuOpen && (
           <div className="lg:hidden border-t border-slate-100 bg-white/98 backdrop-blur-xl px-4 py-4 space-y-3 shadow-xl animate-fadeIn">
             <nav className="flex flex-col space-y-2 text-sm font-semibold text-slate-700">
-              <a
-                href="#how-it-works"
-                onClick={() => setMobileMenuOpen(false)}
-                className="px-3 py-2 rounded-xl hover:bg-slate-50"
-              >
-                How It Works
-              </a>
-              <a
-                href="#live-network"
-                onClick={() => setMobileMenuOpen(false)}
-                className="px-3 py-2 rounded-xl hover:bg-slate-50"
-              >
-                Live Network
-              </a>
-              <a
-                href="#emergency"
-                onClick={() => setMobileMenuOpen(false)}
-                className="px-3 py-2 rounded-xl hover:bg-slate-50 text-rose-600 font-bold"
-              >
-                🚨 Emergency Mode
-              </a>
               <Link
                 to="/explore"
                 onClick={() => setMobileMenuOpen(false)}

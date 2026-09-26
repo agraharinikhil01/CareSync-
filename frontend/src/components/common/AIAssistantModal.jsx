@@ -22,7 +22,7 @@ const AIAssistantModal = ({ isOpen, onClose }) => {
   const [messages, setMessages] = useState([
     {
       role: 'ai',
-      text: 'नमस्ते! 🙏 मैं आपका CareSync Pro AI असिस्टेंट हूँ (Powered by Google Gemini)।\n\nआप मुझसे कोई भी सवाल पूछ सकते हैं — विज्ञान, तकनीक, सामान्य ज्ञान, गणित, कोडिंग, या स्वास्थ्य और अस्पताल सेवाओं से जुड़ी कोई भी जानकारी!',
+      text: 'नमस्ते',
     },
   ]);
   const [input, setInput] = useState('');
@@ -42,23 +42,23 @@ const AIAssistantModal = ({ isOpen, onClose }) => {
   const toggleLanguage = (lang) => {
     if (lang === language) return;
     setLanguage(lang);
-    if (lang === 'hi') {
-      setMessages((prev) => [
+
+    const greeting = lang === 'hi' ? 'नमस्ते' : 'Hello CareSync AI';
+
+    // If chat hasn't started yet (only greeting shown), cleanly replace it with the new greeting
+    setMessages((prev) => {
+      const hasUserMessage = prev.some((m) => m.role === 'user');
+      if (!hasUserMessage) {
+        return [{ role: 'ai', text: greeting }];
+      }
+      return [
         ...prev,
         {
           role: 'ai',
-          text: '🇮🇳 हिंदी भाषा मोड सक्रिय है। अब आप हिंदी में कोई भी सामान्य ज्ञान, विज्ञान, तकनीक या स्वास्थ्य संबंधी प्रश्न पूछ सकते हैं।',
+          text: greeting,
         },
-      ]);
-    } else {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'ai',
-          text: '🌐 English mode enabled. Ask me anything across general knowledge, science, coding, or clinical questions!',
-        },
-      ]);
-    }
+      ];
+    });
   };
 
   const handleSend = async (textToSend) => {
@@ -102,13 +102,11 @@ const AIAssistantModal = ({ isOpen, onClose }) => {
   };
 
   const handleClear = () => {
+    const greeting = language === 'hi' ? 'नमस्ते' : 'Hello CareSync AI';
     setMessages([
       {
         role: 'ai',
-        text:
-          language === 'hi'
-            ? 'बातचीत रीसेट हो गई है। आप सामान्य ज्ञान, विज्ञान, तकनीक या स्वास्थ्य से जुड़ा कोई भी सवाल पूछ सकते हैं।'
-            : 'Conversation reset. Ask me anything about science, general knowledge, technology, or health!',
+        text: greeting,
       },
     ]);
     toast.success(language === 'hi' ? 'बातचीत रीसेट हो गई' : 'Conversation cleared');

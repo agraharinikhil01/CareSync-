@@ -52,6 +52,7 @@ export const AuthProvider = ({ children }) => {
     } catch (err) {
       const msg =
         err.response?.data?.message ||
+        err.response?.data?.error?.message ||
         (!err.response
           ? 'Cannot connect to CareSync server. Please ensure the backend is running.'
           : 'Login failed. Please check your credentials.');

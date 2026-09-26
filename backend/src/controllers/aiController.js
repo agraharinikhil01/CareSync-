@@ -260,6 +260,7 @@ To get the full in-depth response for **"${message}"**, please ensure your conne
         }
       }
     }
+  }
 
     res.json({
       success: true,

@@ -104,10 +104,12 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
           {/* Logo & Network Status */}
           <div className="flex items-center gap-3">
-            <Link to="/" className="flex items-center gap-2.5">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-sky-600 to-teal-500 flex items-center justify-center text-white shadow-md shadow-sky-500/20">
-                <Compass className="w-5 h-5 animate-spin-slow" />
-              </div>
+            <Link to="/" className="flex items-center gap-2.5 group">
+              <img
+                src="/caresync-logo.png"
+                alt="CareSync Logo"
+                className="w-11 h-11 sm:w-12 sm:h-12 object-contain rounded-2xl shadow-sm border border-slate-100 group-hover:scale-105 transition-transform"
+              />
               <div>
                 <span className="text-xl font-black tracking-tight text-slate-900">
                   Care<span className="text-sky-600">Sync</span>
@@ -596,7 +598,7 @@ const LandingPage = () => {
       <footer className="bg-slate-950 text-slate-400 py-12 border-t border-slate-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6 text-xs">
           <div className="flex items-center gap-2">
-            <Compass className="w-5 h-5 text-sky-400" />
+            <img src="/caresync-logo.png" alt="CareSync" className="w-6 h-6 object-contain rounded-md" />
             <span className="text-white font-bold text-sm">CareSync</span>
             <span>— Real-Time Hospital Discovery &amp; Management Platform</span>
           </div>

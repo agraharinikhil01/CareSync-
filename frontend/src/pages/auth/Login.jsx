@@ -154,7 +154,6 @@ const Login = () => {
     if (res?.success) {
       setOtpSent(true);
       setOtpCooldown(60);
-      toast.success(`Verification code sent to ${clean}`);
     }
   };
 
@@ -483,6 +482,9 @@ const Login = () => {
                       {otpCooldown > 0 ? `Resend in ${otpCooldown}s` : 'Resend OTP'}
                     </button>
                   </div>
+                  <p className="text-[11px] text-slate-400 text-center mt-2">
+                    Tip: If not in your inbox, please check your <strong className="text-slate-500 font-medium">Spam</strong> or <strong className="text-slate-500 font-medium">Promotions</strong> folder.
+                  </p>
                 </div>
 
                 {/* Verify Button */}

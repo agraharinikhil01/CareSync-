@@ -3,7 +3,8 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Patient = require('../models/Patient');
 const Doctor = require('../models/Doctor');
-const { sendRegistrationEmail, sendPasswordResetEmail } = require('../services/emailService');
+const EmailOtp = require('../models/EmailOtp');
+const { sendRegistrationEmail, sendPasswordResetEmail, sendOTPEmail } = require('../services/emailService');
 
 const generateToken = (userId, role) => {
   const JWT_SECRET = process.env.JWT_SECRET || 'caresync_super_secret_jwt_key_2026_change_this';
@@ -263,6 +264,182 @@ const googleAuth = async (req, res) => {
   }
 };
 
+// POST /api/auth/send-otp
+const sendOTP = async (req, res) => {
+  try {
+    const { email, purpose = 'LOGIN' } = req.body;
+
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({ success: false, message: 'Please provide a valid email address' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPurpose = (purpose || 'LOGIN').toString().toUpperCase();
+
+    // Generate secure 6-digit numeric OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // Delete any old OTPs for this email
+    await EmailOtp.deleteMany({ email: cleanEmail });
+
+    // Store in EmailOtp
+    await EmailOtp.create({
+      email: cleanEmail,
+      otp,
+      purpose: cleanPurpose,
+      expiresAt,
+    });
+
+    // Also associate to User if user exists
+    const user = await User.findOne({ email: cleanEmail });
+    if (user) {
+      user.emailOtp = otp;
+      user.emailOtpExpires = expiresAt;
+      await user.save({ validateBeforeSave: false });
+    }
+
+    // Deliver via Brevo
+    const emailRes = await sendOTPEmail({ email: cleanEmail, otp, purpose });
+
+    if (!emailRes.success && !emailRes.simulated) {
+      console.warn('Brevo email delivery warning:', emailRes.error);
+    }
+
+    res.json({
+      success: true,
+      message: `A 6-digit verification code has been sent to ${cleanEmail}`,
+      data: {
+        email: cleanEmail,
+        expiresInSeconds: 600,
+      },
+    });
+  } catch (err) {
+    console.error('Error in sendOTP:', err.message);
+    res.status(500).json({ success: false, message: 'Failed to send verification code. Please try again.' });
+  }
+};
+
+// POST /api/auth/verify-otp-login
+const verifyOTPLogin = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({ success: false, message: 'Please provide both email and 6-digit verification code' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanOtp = otp.toString().trim();
+
+    // Find valid OTP record
+    const otpRecord = await EmailOtp.findOne({
+      email: cleanEmail,
+      expiresAt: { $gt: new Date() },
+    });
+
+    let user = await User.findOne({ email: cleanEmail }).select('+password +emailOtp +emailOtpExpires');
+
+    const isValidInRecord = otpRecord && otpRecord.otp === cleanOtp;
+    const isValidInUser = user && user.emailOtp === cleanOtp && user.emailOtpExpires && user.emailOtpExpires > new Date();
+
+    if (!isValidInRecord && !isValidInUser) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired verification code. Please request a new OTP.',
+      });
+    }
+
+    // Clean up verified OTP
+    await EmailOtp.deleteMany({ email: cleanEmail });
+
+    // Auto-create Patient account if new email
+    if (!user) {
+      const derivedName = cleanEmail.split('@')[0].replace(/[._]/g, ' ');
+      user = await User.create({
+        name: derivedName.charAt(0).toUpperCase() + derivedName.slice(1),
+        email: cleanEmail,
+        password: crypto.randomBytes(16).toString('hex') + 'Aa1!',
+        role: 'PATIENT',
+        isEmailVerified: true,
+      });
+
+      await Patient.create({
+        user: user._id,
+        bloodGroup: 'O+',
+      });
+    } else {
+      user.isEmailVerified = true;
+      user.emailOtp = undefined;
+      user.emailOtpExpires = undefined;
+      await user.save({ validateBeforeSave: false });
+    }
+
+    const token = generateToken(user._id, user.role);
+
+    res.json({
+      success: true,
+      message: 'Email verified and logged in successfully',
+      data: {
+        token,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          phone: user.phone || '',
+          profileImage: user.profileImage || '',
+          isEmailVerified: true,
+        },
+      },
+    });
+  } catch (err) {
+    console.error('Error in verifyOTPLogin:', err.message);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// POST /api/auth/verify-email
+const verifyEmailOTP = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    const targetEmail = (email || req.user?.email || '').trim().toLowerCase();
+
+    if (!targetEmail || !otp) {
+      return res.status(400).json({ success: false, message: 'Email and verification code are required' });
+    }
+
+    const cleanOtp = otp.toString().trim();
+    const otpRecord = await EmailOtp.findOne({
+      email: targetEmail,
+      expiresAt: { $gt: new Date() },
+    });
+
+    let user = await User.findOne({ email: targetEmail }).select('+emailOtp +emailOtpExpires');
+    const isValid = (otpRecord && otpRecord.otp === cleanOtp) || (user && user.emailOtp === cleanOtp && user.emailOtpExpires > new Date());
+
+    if (!isValid) {
+      return res.status(400).json({ success: false, message: 'Invalid or expired verification code' });
+    }
+
+    await EmailOtp.deleteMany({ email: targetEmail });
+
+    if (user) {
+      user.isEmailVerified = true;
+      user.emailOtp = undefined;
+      user.emailOtpExpires = undefined;
+      await user.save({ validateBeforeSave: false });
+    }
+
+    res.json({
+      success: true,
+      message: 'Email address successfully verified!',
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -270,4 +447,7 @@ module.exports = {
   getMe,
   forgotPassword,
   resetPassword,
+  sendOTP,
+  verifyOTPLogin,
+  verifyEmailOTP,
 };

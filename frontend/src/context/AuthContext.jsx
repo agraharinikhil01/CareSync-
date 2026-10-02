@@ -99,6 +99,42 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const sendOtp = async (email, purpose = 'LOGIN') => {
+    try {
+      const res = await api.post('/auth/send-otp', { email, purpose });
+      if (res.data.success) {
+        toast.success(res.data.message || 'Verification code sent to your email!');
+        return { success: true, data: res.data.data };
+      }
+      return { success: false, message: res.data.message };
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed to send verification code. Please try again.';
+      toast.error(msg);
+      return { success: false, message: msg };
+    }
+  };
+
+  const loginWithOtp = async (email, otp) => {
+    try {
+      const res = await api.post('/auth/verify-otp-login', { email, otp });
+      if (res.data.success) {
+        const { token: newToken, user: newUser } = res.data.data;
+        setToken(newToken);
+        setUser(newUser);
+        localStorage.setItem('token', newToken);
+        localStorage.setItem('user', JSON.stringify(newUser));
+        toast.success(`Welcome back, ${newUser.name}!`);
+        return { success: true, user: newUser };
+      }
+    } catch (err) {
+      const msg =
+        err.response?.data?.message ||
+        'Invalid or expired verification code. Please check and try again.';
+      toast.error(msg);
+      return { success: false, message: msg };
+    }
+  };
+
   const logout = (silent = false) => {
     setToken(null);
     setUser(null);
@@ -110,7 +146,20 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, googleLogin, logout, isAuthenticated: !!token }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        loading,
+        login,
+        register,
+        googleLogin,
+        sendOtp,
+        loginWithOtp,
+        logout,
+        isAuthenticated: !!token,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

@@ -13,6 +13,10 @@ import {
   X,
   CheckCircle2,
   Building2,
+  Mail,
+  KeyRound,
+  Send,
+  Sparkles,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -55,12 +59,20 @@ const demoRoles = [
 ];
 
 const Login = () => {
+  const [authMode, setAuthMode] = useState('PASSWORD'); // 'PASSWORD' | 'OTP'
   const [selectedRole, setSelectedRole] = useState('ADMIN');
   const [email, setEmail] = useState('admin@caresync.com');
   const [password, setPassword] = useState('Admin@123');
   const [showPass, setShowPass] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
+
+  // Email OTP Login States
+  const [otpEmail, setOtpEmail] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpCooldown, setOtpCooldown] = useState(0);
 
   // Mascot animation state hooks
   const [focusedField, setFocusedField] = useState(null); // 'email' | 'password' | null
@@ -72,7 +84,7 @@ const Login = () => {
   const [googleName, setGoogleName] = useState('');
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  const { login, googleLogin } = useAuth();
+  const { login, googleLogin, sendOtp, loginWithOtp } = useAuth();
   const navigate = useNavigate();
 
   const roleRedirects = {
@@ -83,10 +95,22 @@ const Login = () => {
     PATIENT: '/patient/dashboard',
   };
 
+  // 60-second OTP cooldown ticker
+  useEffect(() => {
+    let timer;
+    if (otpCooldown > 0) {
+      timer = setInterval(() => {
+        setOtpCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [otpCooldown]);
+
   const handleSelectRole = (r) => {
     setSelectedRole(r.id);
     setEmail(r.email);
     setPassword(r.password);
+    setAuthMode('PASSWORD');
     toast.success(`Demo credentials loaded: ${r.label}`, {
       id: 'demo-select',
       duration: 1800,
@@ -107,6 +131,45 @@ const Login = () => {
     if (res?.success) {
       toast.success(`Welcome back, ${res.user.name}!`);
       navigate(roleRedirects[res.user.role] || '/');
+    }
+  };
+
+  // Email OTP Request & Verification Handlers
+  const handleSendOtp = async (e) => {
+    if (e) e.preventDefault();
+    const clean = otpEmail.trim().toLowerCase();
+    if (!clean || !clean.includes('@')) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
+    setOtpLoading(true);
+    const res = await sendOtp(clean, 'LOGIN');
+    setOtpLoading(false);
+
+    if (res?.success) {
+      setOtpSent(true);
+      setOtpCooldown(60);
+      toast.success(`Verification code sent to ${clean}`);
+    }
+  };
+
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    const cleanEmail = otpEmail.trim().toLowerCase();
+    const cleanOtp = otpCode.trim();
+
+    if (!cleanEmail || cleanOtp.length < 6) {
+      toast.error('Please enter the full 6-digit verification code');
+      return;
+    }
+
+    setOtpLoading(true);
+    const res = await loginWithOtp(cleanEmail, cleanOtp);
+    setOtpLoading(false);
+
+    if (res?.success) {
+      navigate(roleRedirects[res.user.role] || '/patient/dashboard');
     }
   };
 
@@ -266,99 +329,245 @@ const Login = () => {
           </div>
 
           {/* Headline & Subtitle */}
-          <div className="text-center mb-6">
+          <div className="text-center mb-5">
             <h1 className="text-2xl sm:text-[28px] font-extrabold text-slate-900 tracking-tight">
               Welcome back!
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 mt-1">
-              Enter your login details
+              {authMode === 'OTP'
+                ? 'Sign in securely with instant email verification code'
+                : 'Enter your credentials or pick a demo role'}
             </p>
           </div>
 
-          {/* Login Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email Field */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                Email
-              </label>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                onFocus={() => setFocusedField('email')}
-                onBlur={() => setFocusedField(null)}
-                placeholder="name@hospital.com"
-                className="w-full px-4 py-3 rounded-xl bg-[#f0f2f5] border border-transparent focus:border-slate-300 focus:bg-white text-slate-900 text-sm placeholder:text-slate-400 transition-all outline-hidden focus:ring-3 focus:ring-sky-500/15 shadow-[inset_0_1px_3px_rgba(0,0,0,0.03)]"
-              />
-            </div>
-
-            {/* Password Field */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showPass ? 'text' : 'password'}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onFocus={() => setFocusedField('password')}
-                  onBlur={() => setFocusedField(null)}
-                  placeholder="••••••••••••"
-                  className="w-full pl-4 pr-11 py-3 rounded-xl bg-[#f0f2f5] border border-transparent focus:border-slate-300 focus:bg-white text-slate-900 text-sm placeholder:text-slate-400 transition-all outline-hidden focus:ring-3 focus:ring-sky-500/15 shadow-[inset_0_1px_3px_rgba(0,0,0,0.03)]"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPass(!showPass)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-1 cursor-pointer"
-                  aria-label="Toggle password visibility"
-                >
-                  {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
-            {/* Remember Me & Forgot Password Row */}
-            <div className="flex items-center justify-between text-xs pt-0.5">
-              <label className="flex items-center gap-2 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer accent-slate-900"
-                />
-                <span className="text-slate-700 font-medium">Remember me</span>
-              </label>
-
-              <Link
-                to="/forgot-password"
-                className="text-slate-600 hover:text-sky-600 font-medium transition-colors hover:underline"
-              >
-                Forgot password?
-              </Link>
-            </div>
-
-            {/* Pill-shaped Log In Button */}
+          {/* Login Method Tabs */}
+          <div className="flex items-center p-1 bg-slate-100/90 rounded-2xl mb-5 border border-slate-200/60">
             <button
-              type="submit"
-              disabled={loading}
-              onMouseEnter={() => setIsHoveringSubmit(true)}
-              onMouseLeave={() => setIsHoveringSubmit(false)}
-              className="w-full py-3 px-6 rounded-full bg-slate-950 hover:bg-black active:scale-[0.99] text-white font-medium text-sm shadow-md shadow-slate-950/20 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed mt-2"
+              type="button"
+              onClick={() => setAuthMode('PASSWORD')}
+              className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                authMode === 'PASSWORD'
+                  ? 'bg-white text-slate-900 shadow-xs'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
             >
-              {loading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Logging in...</span>
-                </>
-              ) : (
-                <span>Log in</span>
-              )}
+              <KeyRound className="w-3.5 h-3.5" />
+              <span>Password</span>
             </button>
-          </form>
+            <button
+              type="button"
+              onClick={() => {
+                setAuthMode('OTP');
+                if (!otpEmail && email) setOtpEmail(email);
+              }}
+              className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                authMode === 'OTP'
+                  ? 'bg-white text-sky-700 shadow-xs ring-1 ring-sky-300'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <Mail className="w-3.5 h-3.5" />
+              <span>Email OTP</span>
+              <span className="text-[9px] bg-emerald-100 text-emerald-700 font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                <Sparkles className="w-2.5 h-2.5" />
+                Brevo
+              </span>
+            </button>
+          </div>
+
+          {/* Form Section: Conditional between Email OTP & Password */}
+          {authMode === 'OTP' ? (
+            <form onSubmit={otpSent ? handleVerifyOtp : handleSendOtp} className="space-y-4">
+              {/* Email Address */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-semibold text-slate-700">
+                    Email Address
+                  </label>
+                  {otpSent && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOtpSent(false);
+                        setOtpCode('');
+                      }}
+                      className="text-[11px] text-sky-600 hover:text-sky-700 font-medium cursor-pointer"
+                    >
+                      Change Email
+                    </button>
+                  )}
+                </div>
+                <div className="relative">
+                  <input
+                    type="email"
+                    required
+                    disabled={otpSent}
+                    value={otpEmail}
+                    onChange={(e) => setOtpEmail(e.target.value)}
+                    onFocus={() => setFocusedField('email')}
+                    onBlur={() => setFocusedField(null)}
+                    placeholder="Enter your email (e.g. patient@example.com)"
+                    className="w-full px-4 py-3 rounded-xl bg-[#f0f2f5] border border-transparent focus:border-slate-300 focus:bg-white text-slate-900 text-sm placeholder:text-slate-400 transition-all outline-hidden focus:ring-3 focus:ring-sky-500/15 disabled:opacity-80"
+                  />
+                  {otpSent && (
+                    <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-emerald-600 flex items-center gap-1 text-xs font-semibold">
+                      <CheckCircle2 className="w-4 h-4" />
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* 6-Digit Verification Code Field (Visible when code sent) */}
+              {otpSent && (
+                <div className="animate-in fade-in zoom-in-95 duration-200">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-semibold text-slate-700">
+                      6-Digit Verification Code
+                    </label>
+                    <span className="text-[10px] text-slate-400 font-mono">
+                      Valid for 10 min
+                    </span>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      required
+                      maxLength={6}
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                      onFocus={() => setFocusedField('password')}
+                      onBlur={() => setFocusedField(null)}
+                      placeholder="• • • • • •"
+                      className="w-full px-4 py-3 rounded-xl bg-[#f0f2f5] border border-transparent focus:border-sky-400 focus:bg-white text-slate-900 text-xl font-mono tracking-widest text-center placeholder:text-slate-400 transition-all outline-hidden focus:ring-3 focus:ring-sky-500/15 font-bold"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs pt-2">
+                    <span className="text-slate-500">Didn't receive code?</span>
+                    <button
+                      type="button"
+                      disabled={otpCooldown > 0 || otpLoading}
+                      onClick={() => handleSendOtp()}
+                      className="text-sky-600 hover:text-sky-700 font-semibold disabled:text-slate-400 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                    >
+                      {otpCooldown > 0 ? `Resend in ${otpCooldown}s` : 'Resend Code'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={otpLoading || (otpSent && otpCode.length < 6)}
+                onMouseEnter={() => setIsHoveringSubmit(true)}
+                onMouseLeave={() => setIsHoveringSubmit(false)}
+                className="w-full py-3 px-6 rounded-full bg-sky-600 hover:bg-sky-700 active:scale-[0.99] text-white font-medium text-sm shadow-md shadow-sky-600/25 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed mt-2"
+              >
+                {otpLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>{otpSent ? 'Verifying Code...' : 'Sending Verification Code...'}</span>
+                  </>
+                ) : otpSent ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Verify & Sign In</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    <span>Send Verification Code</span>
+                  </>
+                )}
+              </button>
+            </form>
+          ) : (
+            /* Standard Password Form */
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Email Field */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onFocus={() => setFocusedField('email')}
+                  onBlur={() => setFocusedField(null)}
+                  placeholder="name@hospital.com"
+                  className="w-full px-4 py-3 rounded-xl bg-[#f0f2f5] border border-transparent focus:border-slate-300 focus:bg-white text-slate-900 text-sm placeholder:text-slate-400 transition-all outline-hidden focus:ring-3 focus:ring-sky-500/15 shadow-[inset_0_1px_3px_rgba(0,0,0,0.03)]"
+                />
+              </div>
+
+              {/* Password Field */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPass ? 'text' : 'password'}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    onFocus={() => setFocusedField('password')}
+                    onBlur={() => setFocusedField(null)}
+                    placeholder="••••••••••••"
+                    className="w-full pl-4 pr-11 py-3 rounded-xl bg-[#f0f2f5] border border-transparent focus:border-slate-300 focus:bg-white text-slate-900 text-sm placeholder:text-slate-400 transition-all outline-hidden focus:ring-3 focus:ring-sky-500/15 shadow-[inset_0_1px_3px_rgba(0,0,0,0.03)]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPass(!showPass)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-1 cursor-pointer"
+                    aria-label="Toggle password visibility"
+                  >
+                    {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Remember Me & Forgot Password Row */}
+              <div className="flex items-center justify-between text-xs pt-0.5">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer accent-slate-900"
+                  />
+                  <span className="text-slate-700 font-medium">Remember me</span>
+                </label>
+
+                <Link
+                  to="/forgot-password"
+                  className="text-slate-600 hover:text-sky-600 font-medium transition-colors hover:underline"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+
+              {/* Pill-shaped Log In Button */}
+              <button
+                type="submit"
+                disabled={loading}
+                onMouseEnter={() => setIsHoveringSubmit(true)}
+                onMouseLeave={() => setIsHoveringSubmit(false)}
+                className="w-full py-3 px-6 rounded-full bg-slate-950 hover:bg-black active:scale-[0.99] text-white font-medium text-sm shadow-md shadow-slate-950/20 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed mt-2"
+              >
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Logging in...</span>
+                  </>
+                ) : (
+                  <span>Log in</span>
+                )}
+              </button>
+            </form>
+          )}
 
           {/* "OR" Divider */}
           <div className="relative my-5 flex items-center justify-center">
@@ -368,7 +577,7 @@ const Login = () => {
             </span>
           </div>
 
-          {/* Clean, Full-width Google Sign-In Button (Apple and Twitter removed as requested) */}
+          {/* Clean, Full-width Google Sign-In Button */}
           <div>
             <button
               type="button"
@@ -398,7 +607,7 @@ const Login = () => {
             </button>
           </div>
 
-          {/* Quick Demo Role Switcher Chips */}
+          {/* Quick Demo Role Switcher Chips - Now in clean 5-col layout */}
           <div className="mt-4 pt-3 border-t border-slate-100">
             <div className="flex items-center justify-between mb-2">
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
@@ -409,23 +618,25 @@ const Login = () => {
               </span>
             </div>
 
-            <div className="grid grid-cols-4 gap-1.5">
+            <div className="grid grid-cols-5 gap-1 sm:gap-1.5">
               {demoRoles.map((role) => {
-                const isSelected = selectedRole === role.id;
+                const isSelected = authMode === 'PASSWORD' && selectedRole === role.id;
                 const Icon = role.icon;
                 return (
                   <button
                     key={role.id}
                     type="button"
                     onClick={() => handleSelectRole(role)}
-                    className={`py-1.5 px-2 rounded-lg border text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
+                    className={`py-1.5 px-1 rounded-lg border text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
                       isSelected
                         ? 'border-sky-500 bg-sky-50/80 text-sky-700 font-semibold ring-1 ring-sky-400/50'
                         : 'border-slate-200 bg-white hover:border-slate-300 text-slate-600 hover:bg-slate-50'
                     }`}
                   >
                     <Icon className="w-3.5 h-3.5" />
-                    <span className="text-[11px] leading-tight">{role.label}</span>
+                    <span className="text-[10px] sm:text-[11px] leading-tight truncate w-full">
+                      {role.label}
+                    </span>
                   </button>
                 );
               })}

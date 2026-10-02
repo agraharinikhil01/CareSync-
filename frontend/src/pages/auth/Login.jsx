@@ -16,7 +16,6 @@ import {
   Mail,
   KeyRound,
   Send,
-  Sparkles,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -137,6 +136,11 @@ const Login = () => {
   // Email OTP Request & Verification Handlers
   const handleSendOtp = async (e) => {
     if (e) e.preventDefault();
+    if (otpLoading) return;
+    if (otpCooldown > 0 && otpSent) {
+      toast.error(`Please wait ${otpCooldown}s before requesting a new code`);
+      return;
+    }
     const clean = otpEmail.trim().toLowerCase();
     if (!clean || !clean.includes('@')) {
       toast.error('Please enter a valid email address');
@@ -341,11 +345,11 @@ const Login = () => {
           </div>
 
           {/* Login Method Tabs */}
-          <div className="flex items-center p-1 bg-slate-100/90 rounded-2xl mb-5 border border-slate-200/60">
+          <div className="flex items-center p-1 bg-slate-100 rounded-2xl mb-5 border border-slate-200/80">
             <button
               type="button"
               onClick={() => setAuthMode('PASSWORD')}
-              className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+              className={`flex-1 py-2 px-3 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                 authMode === 'PASSWORD'
                   ? 'bg-white text-slate-900 shadow-xs'
                   : 'text-slate-500 hover:text-slate-800'
@@ -360,7 +364,7 @@ const Login = () => {
                 setAuthMode('OTP');
                 if (!otpEmail && email) setOtpEmail(email);
               }}
-              className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+              className={`flex-1 py-2 px-3 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                 authMode === 'OTP'
                   ? 'bg-white text-sky-700 shadow-xs ring-1 ring-sky-300'
                   : 'text-slate-500 hover:text-slate-800'
@@ -368,79 +372,105 @@ const Login = () => {
             >
               <Mail className="w-3.5 h-3.5" />
               <span>Email OTP</span>
-              <span className="text-[9px] bg-emerald-100 text-emerald-700 font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
-                <Sparkles className="w-2.5 h-2.5" />
-                Brevo
-              </span>
             </button>
           </div>
 
           {/* Form Section: Conditional between Email OTP & Password */}
           {authMode === 'OTP' ? (
-            <form onSubmit={otpSent ? handleVerifyOtp : handleSendOtp} className="space-y-4">
-              {/* Email Address */}
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-semibold text-slate-700">
+            !otpSent ? (
+              /* Step 1: Enter Email & Click "Get OTP" */
+              <form onSubmit={handleSendOtp} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                     Email Address
                   </label>
-                  {otpSent && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setOtpSent(false);
-                        setOtpCode('');
-                      }}
-                      className="text-[11px] text-sky-600 hover:text-sky-700 font-medium cursor-pointer"
-                    >
-                      Change Email
-                    </button>
-                  )}
-                </div>
-                <div className="relative">
-                  <input
-                    type="email"
-                    required
-                    disabled={otpSent}
-                    value={otpEmail}
-                    onChange={(e) => setOtpEmail(e.target.value)}
-                    onFocus={() => setFocusedField('email')}
-                    onBlur={() => setFocusedField(null)}
-                    placeholder="Enter your email (e.g. patient@example.com)"
-                    className="w-full px-4 py-3 rounded-xl bg-[#f0f2f5] border border-transparent focus:border-slate-300 focus:bg-white text-slate-900 text-sm placeholder:text-slate-400 transition-all outline-hidden focus:ring-3 focus:ring-sky-500/15 disabled:opacity-80"
-                  />
-                  {otpSent && (
-                    <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-emerald-600 flex items-center gap-1 text-xs font-semibold">
-                      <CheckCircle2 className="w-4 h-4" />
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* 6-Digit Verification Code Field (Visible when code sent) */}
-              {otpSent && (
-                <div className="animate-in fade-in zoom-in-95 duration-200">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-xs font-semibold text-slate-700">
-                      6-Digit Verification Code
-                    </label>
-                    <span className="text-[10px] text-slate-400 font-mono">
-                      Valid for 10 min
-                    </span>
-                  </div>
                   <div className="relative">
                     <input
-                      type="text"
+                      type="email"
                       required
-                      maxLength={6}
-                      value={otpCode}
-                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                      onFocus={() => setFocusedField('password')}
+                      value={otpEmail}
+                      onChange={(e) => setOtpEmail(e.target.value)}
+                      onFocus={() => setFocusedField('email')}
                       onBlur={() => setFocusedField(null)}
-                      placeholder="• • • • • •"
-                      className="w-full px-4 py-3 rounded-xl bg-[#f0f2f5] border border-transparent focus:border-sky-400 focus:bg-white text-slate-900 text-xl font-mono tracking-widest text-center placeholder:text-slate-400 transition-all outline-hidden focus:ring-3 focus:ring-sky-500/15 font-bold"
+                      placeholder="name@example.com"
+                      className="w-full px-4 py-3 rounded-xl bg-[#f0f2f5] border border-transparent focus:border-sky-400 focus:bg-white text-slate-900 text-sm placeholder:text-slate-400 transition-all outline-hidden focus:ring-3 focus:ring-sky-500/15"
                     />
                   </div>
+                  <p className="text-[11px] text-slate-500 mt-1.5 leading-relaxed">
+                    We will send a 6-digit one-time verification code to this email.
+                  </p>
+                </div>
+
+                {/* Get OTP Button */}
+                <button
+                  type="submit"
+                  disabled={otpLoading || !otpEmail.trim() || otpCooldown > 0}
+                  onMouseEnter={() => setIsHoveringSubmit(true)}
+                  onMouseLeave={() => setIsHoveringSubmit(false)}
+                  className="w-full py-3 px-6 rounded-full bg-sky-600 hover:bg-sky-700 active:scale-[0.99] text-white font-medium text-sm shadow-md shadow-sky-600/25 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+                >
+                  {otpLoading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Sending OTP...</span>
+                    </>
+                  ) : otpCooldown > 0 ? (
+                    <span>Wait {otpCooldown}s to request again</span>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" />
+                      <span>Get OTP</span>
+                    </>
+                  )}
+                </button>
+              </form>
+            ) : (
+              /* Step 2: Enter 6-digit OTP & Click "Verify & Login" */
+              <form onSubmit={handleVerifyOtp} className="space-y-4">
+                {/* Email Confirmation Chip */}
+                <div className="p-3 rounded-xl bg-sky-50/90 border border-sky-100 flex items-center justify-between">
+                  <div className="min-w-0 pr-2">
+                    <span className="text-[10px] text-sky-700 font-semibold uppercase tracking-wider block">
+                      Code sent to
+                    </span>
+                    <span className="text-xs font-bold text-slate-800 truncate block">
+                      {otpEmail}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOtpSent(false);
+                      setOtpCode('');
+                    }}
+                    className="text-xs font-semibold text-sky-600 hover:text-sky-800 hover:underline cursor-pointer shrink-0"
+                  >
+                    Change Email
+                  </button>
+                </div>
+
+                {/* 6-Digit Verification Code Field */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-semibold text-slate-700">
+                      Enter 6-Digit Code
+                    </label>
+                    <span className="text-[11px] text-slate-400">
+                      Expires in 10 mins
+                    </span>
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    autoFocus
+                    maxLength={6}
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                    onFocus={() => setFocusedField('password')}
+                    onBlur={() => setFocusedField(null)}
+                    placeholder="• • • • • •"
+                    className="w-full px-4 py-3 rounded-xl bg-[#f0f2f5] border border-transparent focus:border-sky-400 focus:bg-white text-slate-900 text-2xl font-mono tracking-[0.4em] text-center placeholder:text-slate-300 transition-all outline-hidden focus:ring-3 focus:ring-sky-500/15 font-bold"
+                  />
 
                   <div className="flex items-center justify-between text-xs pt-2">
                     <span className="text-slate-500">Didn't receive code?</span>
@@ -450,38 +480,33 @@ const Login = () => {
                       onClick={() => handleSendOtp()}
                       className="text-sky-600 hover:text-sky-700 font-semibold disabled:text-slate-400 disabled:cursor-not-allowed transition-colors cursor-pointer"
                     >
-                      {otpCooldown > 0 ? `Resend in ${otpCooldown}s` : 'Resend Code'}
+                      {otpCooldown > 0 ? `Resend in ${otpCooldown}s` : 'Resend OTP'}
                     </button>
                   </div>
                 </div>
-              )}
 
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={otpLoading || (otpSent && otpCode.length < 6)}
-                onMouseEnter={() => setIsHoveringSubmit(true)}
-                onMouseLeave={() => setIsHoveringSubmit(false)}
-                className="w-full py-3 px-6 rounded-full bg-sky-600 hover:bg-sky-700 active:scale-[0.99] text-white font-medium text-sm shadow-md shadow-sky-600/25 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed mt-2"
-              >
-                {otpLoading ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span>{otpSent ? 'Verifying Code...' : 'Sending Verification Code...'}</span>
-                  </>
-                ) : otpSent ? (
-                  <>
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>Verify & Sign In</span>
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-4 h-4" />
-                    <span>Send Verification Code</span>
-                  </>
-                )}
-              </button>
-            </form>
+                {/* Verify Button */}
+                <button
+                  type="submit"
+                  disabled={otpLoading || otpCode.length < 6}
+                  onMouseEnter={() => setIsHoveringSubmit(true)}
+                  onMouseLeave={() => setIsHoveringSubmit(false)}
+                  className="w-full py-3 px-6 rounded-full bg-sky-600 hover:bg-sky-700 active:scale-[0.99] text-white font-medium text-sm shadow-md shadow-sky-600/25 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+                >
+                  {otpLoading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Verifying...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Verify & Login</span>
+                    </>
+                  )}
+                </button>
+              </form>
+            )
           ) : (
             /* Standard Password Form */
             <form onSubmit={handleSubmit} className="space-y-4">

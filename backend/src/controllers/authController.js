@@ -276,11 +276,23 @@ const sendOTP = async (req, res) => {
     const cleanEmail = email.trim().toLowerCase();
     const cleanPurpose = (purpose || 'LOGIN').toString().toUpperCase();
 
+    // Prevent duplicate/spam sends: enforce minimum 30-second gap per email
+    const recentOtp = await EmailOtp.findOne({
+      email: cleanEmail,
+      createdAt: { $gt: new Date(Date.now() - 30 * 1000) },
+    });
+    if (recentOtp) {
+      return res.status(429).json({
+        success: false,
+        message: 'A verification code was just sent. Please wait before requesting another code.',
+      });
+    }
+
     // Generate secure 6-digit numeric OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    // Delete any old OTPs for this email
+    // Ensure strictly one active OTP exists by clearing all previous ones
     await EmailOtp.deleteMany({ email: cleanEmail });
 
     // Store in EmailOtp
@@ -299,11 +311,11 @@ const sendOTP = async (req, res) => {
       await user.save({ validateBeforeSave: false });
     }
 
-    // Deliver via Brevo
-    const emailRes = await sendOTPEmail({ email: cleanEmail, otp, purpose });
+    // Deliver transactional email
+    const emailRes = await sendOTPEmail({ email: cleanEmail, otp, purpose: cleanPurpose });
 
     if (!emailRes.success && !emailRes.simulated) {
-      console.warn('Brevo email delivery warning:', emailRes.error);
+      console.warn('Email delivery notice:', emailRes.error);
     }
 
     res.json({

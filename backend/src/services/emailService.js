@@ -113,7 +113,7 @@ const sendOTPEmail = async ({ email, otp, purpose = 'LOGIN' }) => {
         </div>
         <div class="footer">
           <p style="margin: 0; font-weight: 600; color: #64748b;">CareSync Hospital Management System</p>
-          <p style="margin: 4px 0 0;">HIPAA Compliant • 256-bit Encrypted • Brevo Certified Delivery</p>
+          <p style="margin: 4px 0 0;">HIPAA Compliant • 256-bit SSL Encrypted • Official Healthcare Communication</p>
         </div>
       </div>
     </body>
